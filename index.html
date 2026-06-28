@@ -746,6 +746,95 @@
   .block-tag.tag-shape { color: #9333EA; background: #FAF5FF; }
   .block-tag.tag-icon-svg { color: #DB2777; background: #FDF2F8; }
 
+  /* ─── Per-row action buttons (move up / down / delete) ─── */
+  .row-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    margin-left: 4px;
+    flex-shrink: 0;
+  }
+  .row-action {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border-radius: 4px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-subtle);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s ease;
+  }
+  .row-action:hover {
+    background: var(--surface-alt);
+    color: var(--text);
+    border-color: var(--border);
+  }
+  .row-action.danger:hover {
+    color: var(--danger);
+    border-color: #FECACA;
+    background: #FEF2F2;
+  }
+  .row-action:disabled,
+  .row-action[aria-disabled="true"] {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  .row-action svg { width: 12px; height: 12px; }
+
+  /* ─── Text row extras: font dropdown, href input ─── */
+  .extras-row {
+    display: grid;
+    grid-template-columns: 36px 1fr;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .extras-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .font-select {
+    height: 26px;
+    padding: 0 26px 0 8px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 12px;
+    color: var(--text);
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+    background-size: 12px;
+    width: 100%;
+  }
+  .font-select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.08);
+  }
+  .href-input {
+    height: 26px;
+    padding: 0 8px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 12px;
+    font-family: var(--font-mono);
+    width: 100%;
+  }
+  .href-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.08);
+  }
+
   .block-url {
     font-family: var(--font-mono);
     font-size: 10.5px;
@@ -1330,6 +1419,111 @@
       return true;
     }
 
+    function setHref(id, href, options) {
+      options = options || {};
+      const item = getItem(id);
+      const el = getElement(id);
+      if (!item || !el || item.type !== 'text' || item.tag !== 'A') return false;
+      const before = item.href || '';
+      const after = href || '';
+      if (before === after) return false;
+      if (after) el.setAttribute('href', after);
+      else el.removeAttribute('href');
+      item.href = after;
+      notify({ kind: 'href', id, before, after, origin: options.origin || 'model' });
+      return true;
+    }
+
+    function setFontFamily(id, family, options) {
+      options = options || {};
+      const item = getItem(id);
+      const el = getElement(id);
+      if (!item || !el || item.type !== 'text') return false;
+      const before = item.fontFamily || '';
+      const after = family || '';
+      if (before === after) return false;
+      if (after) el.style.fontFamily = after;
+      else el.style.removeProperty('font-family');
+      item.fontFamily = after;
+      notify({ kind: 'fontFamily', id, before, after, origin: options.origin || 'model' });
+      return true;
+    }
+
+    function setPadding(id, paddingPx, options) {
+      options = options || {};
+      const item = getItem(id);
+      const el = getElement(id);
+      if (!item || !el || item.type !== 'shape') return false;
+      const before = item.padding || 0;
+      const after = Math.max(0, Number(paddingPx) || 0);
+      if (before === after) return false;
+      el.style.padding = after + 'px';
+      item.padding = after;
+      notify({ kind: 'padding', id, before, after, origin: options.origin || 'model' });
+      return true;
+    }
+
+    function deleteItem(id, options) {
+      options = options || {};
+      const item = getItem(id);
+      const el = getElement(id);
+      if (!item || !el) return false;
+      el.remove();
+      // Remove this item and any descendant items whose source elements are
+      // now gone (shapes can wrap text/icon/image items).
+      items = items.filter(i => getElement(i.id) !== null);
+      notify({ kind: 'delete', id, before: item, after: null, origin: options.origin || 'model' });
+      return true;
+    }
+
+    function moveItem(id, direction, options) {
+      options = options || {};
+      const item = getItem(id);
+      const el = getElement(id);
+      if (!item || !el) return false;
+      const parent = el.parentNode;
+      if (!parent) return false;
+      if (direction === 'up') {
+        const prev = el.previousElementSibling;
+        if (!prev) return false;
+        parent.insertBefore(el, prev);
+      } else if (direction === 'down') {
+        const next = el.nextElementSibling;
+        if (!next) return false;
+        parent.insertBefore(el, next.nextSibling);
+      } else {
+        return false;
+      }
+      sortItemsByDocOrder();
+      notify({
+        kind: 'move', id,
+        before: direction === 'up' ? 'down' : 'up',
+        after: direction,
+        origin: options.origin || 'model'
+      });
+      return true;
+    }
+
+    function sortItemsByDocOrder() {
+      items.sort((a, b) => {
+        const ea = getElement(a.id);
+        const eb = getElement(b.id);
+        if (!ea || !eb) return 0;
+        const pos = ea.compareDocumentPosition(eb);
+        if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
+        if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1;
+        return 0;
+      });
+    }
+
+    function canMove(id, direction) {
+      const el = getElement(id);
+      if (!el) return false;
+      if (direction === 'up') return !!el.previousElementSibling;
+      if (direction === 'down') return !!el.nextElementSibling;
+      return false;
+    }
+
     function setIconColor(id, color, options) {
       options = options || {};
       const item = getItem(id);
@@ -1382,9 +1576,11 @@
     }
 
     return {
-      load, completeDetection, getItem, getElement, list,
-      setText, setColor, setBgColor, setBorderColor, setBorderRadius,
+      load, completeDetection, getItem, getElement, list, canMove,
+      setText, setColor, setBgColor, setBorderColor, setBorderRadius, setPadding,
       setIconColor, setImageSrc, setImageAlt,
+      setHref, setFontFamily,
+      deleteItem, moveItem,
       onChange, serialize, serializeForPreview, reset
     };
   })();
@@ -1398,13 +1594,19 @@
     let index = -1; // points to last applied
     const listeners = new Set();
 
+    // Kinds where each user action should be its own undo step (never
+    // coalesced) — moves, deletes, font swaps, etc. read better as discrete.
+    const NON_COALESCE = new Set(['move', 'delete', 'fontFamily', 'href', 'imageSrc']);
+
     function record(delta) {
       // Drop redo branch
       stack = stack.slice(0, index + 1);
-      // Coalesce with previous only if same id AND same kind, within 700ms.
+      // Coalesce with previous only if same id AND same kind, within 700ms,
+      // AND the kind is one that benefits from coalescing (typing, sliders).
       const prev = stack[stack.length - 1];
       const now = Date.now();
-      if (prev && prev.id === delta.id && prev.kind === delta.kind && (now - prev.ts) < 700) {
+      const canCoalesce = !NON_COALESCE.has(delta.kind);
+      if (canCoalesce && prev && prev.id === delta.id && prev.kind === delta.kind && (now - prev.ts) < 700) {
         prev.after = delta.after;
         prev.ts = now;
       } else {
@@ -1656,6 +1858,29 @@
       if (el.getAttribute(attr) !== value) el.setAttribute(attr, value);
     }
 
+    function removeElement(id) {
+      const idoc = iframe.contentDocument;
+      if (!idoc) return;
+      const el = idoc.querySelector('[data-edit-id="' + id + '"]');
+      if (el) el.remove();
+    }
+
+    function moveElement(id, direction) {
+      const idoc = iframe.contentDocument;
+      if (!idoc) return;
+      const el = idoc.querySelector('[data-edit-id="' + id + '"]');
+      if (!el) return;
+      const parent = el.parentNode;
+      if (!parent) return;
+      if (direction === 'up') {
+        const prev = el.previousElementSibling;
+        if (prev) parent.insertBefore(el, prev);
+      } else if (direction === 'down') {
+        const next = el.nextElementSibling;
+        if (next) parent.insertBefore(el, next.nextSibling);
+      }
+    }
+
     function updateIconColor(id, color) {
       const idoc = iframe.contentDocument;
       if (!idoc) return;
@@ -1678,7 +1903,7 @@
       wrap.setAttribute('data-device', mode);
     }
 
-    return { render, focusBlock, updateElementText, updateElementStyle, updateElementAttr, updateIconColor, setDevice };
+    return { render, focusBlock, updateElementText, updateElementStyle, updateElementAttr, updateIconColor, removeElement, moveElement, setDevice };
   })();
 
   // ─────────────────────────────────────────────
@@ -1803,13 +2028,6 @@
       tag.className = 'block-tag tag-' + item.tag.toLowerCase();
       tag.textContent = item.tag;
       meta.appendChild(tag);
-      if (item.href) {
-        const url = document.createElement('span');
-        url.className = 'block-url';
-        url.textContent = item.href;
-        url.title = item.href;
-        meta.appendChild(url);
-      }
       const spacer = document.createElement('span');
       spacer.className = 'block-meta-spacer';
       meta.appendChild(spacer);
@@ -1835,6 +2053,9 @@
       });
       meta.appendChild(bgColor.control);
 
+      // Row actions (up / down / delete)
+      meta.appendChild(buildRowActions(item));
+
       const textarea = document.createElement('textarea');
       textarea.className = 'block-text';
       textarea.value = item.text;
@@ -1853,13 +2074,137 @@
 
       row.appendChild(meta);
       row.appendChild(textarea);
+
+      // Font family dropdown
+      const fontRow = document.createElement('div');
+      fontRow.className = 'extras-row';
+      const fontLabel = document.createElement('span');
+      fontLabel.className = 'extras-label';
+      fontLabel.textContent = 'Font';
+      const fontSelect = makeFontSelect(item);
+      fontRow.appendChild(fontLabel);
+      fontRow.appendChild(fontSelect);
+      row.appendChild(fontRow);
+
+      // Link href (for <a> elements only)
+      let hrefInput = null;
+      if (item.tag === 'A') {
+        const hrefRow = document.createElement('div');
+        hrefRow.className = 'extras-row';
+        const hrefLabel = document.createElement('span');
+        hrefLabel.className = 'extras-label';
+        hrefLabel.textContent = 'Link';
+        hrefInput = makeHrefInput(item);
+        hrefRow.appendChild(hrefLabel);
+        hrefRow.appendChild(hrefInput);
+        row.appendChild(hrefRow);
+      }
+
       row.addEventListener('click', (e) => {
         if (e.target === textarea) return;
-        if (e.target.closest('.color-control')) return;
+        if (e.target.closest('.color-control, .row-actions, .font-select, .href-input, .extras-row')) return;
         textarea.focus();
       });
 
-      return { row, textarea, textColor, bgColor };
+      return { row, textarea, textColor, bgColor, fontSelect, hrefInput };
+    }
+
+    // Curated font family choices. Empty string = inherit (reset).
+    const FONT_FAMILIES = [
+      { label: 'Default', value: '' },
+      { label: 'Sans-serif', value: '-apple-system, "Inter", system-ui, sans-serif' },
+      { label: 'Serif', value: 'Georgia, "Iowan Old Style", "Times New Roman", serif' },
+      { label: 'Display serif', value: '"Instrument Serif", Georgia, serif' },
+      { label: 'Mono', value: 'ui-monospace, "SF Mono", Menlo, monospace' },
+      { label: 'Rounded', value: '"SF Pro Rounded", "Nunito", system-ui, sans-serif' }
+    ];
+
+    function buildRowActions(item) {
+      const wrap = document.createElement('span');
+      wrap.className = 'row-actions';
+
+      const up = makeIconButton('Move up', 'up',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>');
+      const down = makeIconButton('Move down', '',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>');
+      const del = makeIconButton('Delete', 'danger',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>');
+
+      up.disabled = !DocModel.canMove(item.id, 'up');
+      down.disabled = !DocModel.canMove(item.id, 'down');
+
+      up.addEventListener('click', (e) => {
+        e.stopPropagation();
+        DocModel.moveItem(item.id, 'up', { origin: 'panel' });
+      });
+      down.addEventListener('click', (e) => {
+        e.stopPropagation();
+        DocModel.moveItem(item.id, 'down', { origin: 'panel' });
+      });
+      del.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const label = item.type === 'text' ? item.tag :
+                      item.type === 'shape' ? (item.label || 'shape') :
+                      item.type === 'icon' ? 'icon' : 'image';
+        if (window.confirm('Delete this ' + label + '? This cannot be undone.')) {
+          DocModel.deleteItem(item.id, { origin: 'panel' });
+        }
+      });
+
+      wrap.appendChild(up);
+      wrap.appendChild(down);
+      wrap.appendChild(del);
+      return wrap;
+    }
+
+    function makeIconButton(title, extraClass, svgHtml) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'row-action' + (extraClass ? ' ' + extraClass : '');
+      btn.title = title;
+      btn.setAttribute('aria-label', title);
+      btn.innerHTML = svgHtml;
+      return btn;
+    }
+
+    function makeFontSelect(item) {
+      const select = document.createElement('select');
+      select.className = 'font-select';
+      const current = item.fontFamily || '';
+      let matched = false;
+      for (const f of FONT_FAMILIES) {
+        const opt = document.createElement('option');
+        opt.value = f.value;
+        opt.textContent = f.label;
+        if (f.value === current) { opt.selected = true; matched = true; }
+        select.appendChild(opt);
+      }
+      // If the item already has a custom font that's not in our list, add a
+      // synthetic option so the dropdown reflects reality.
+      if (!matched && current) {
+        const opt = document.createElement('option');
+        opt.value = current;
+        opt.textContent = 'Custom';
+        opt.selected = true;
+        select.insertBefore(opt, select.firstChild.nextSibling);
+      }
+      select.addEventListener('change', () => {
+        DocModel.setFontFamily(item.id, select.value, { origin: 'panel' });
+      });
+      return select;
+    }
+
+    function makeHrefInput(item) {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'href-input';
+      input.placeholder = 'https://…';
+      input.value = item.href || '';
+      input.spellcheck = false;
+      input.addEventListener('input', () => {
+        DocModel.setHref(item.id, input.value, { origin: 'panel' });
+      });
+      return input;
     }
 
     function makeColorPicker(opts) {
@@ -1906,6 +2251,10 @@
       tag.textContent = item.label || item.tag;
       tag.title = item.label || item.tag;
       meta.appendChild(tag);
+      const spacer = document.createElement('span');
+      spacer.className = 'block-meta-spacer';
+      meta.appendChild(spacer);
+      meta.appendChild(buildRowActions(item));
 
       const shapeControls = document.createElement('div');
       shapeControls.className = 'shape-controls';
@@ -1955,6 +2304,25 @@
       radiusRow.body.appendChild(radiusValue);
       shapeControls.appendChild(radiusRow.row);
 
+      // Padding row
+      const paddingRow = makeStyleRow('Padding');
+      const paddingSlider = document.createElement('input');
+      paddingSlider.type = 'range';
+      paddingSlider.min = '0';
+      paddingSlider.max = '64';
+      paddingSlider.value = String(Math.round(item.padding || 0));
+      paddingSlider.className = 'radius-slider';
+      const paddingValue = document.createElement('span');
+      paddingValue.className = 'style-value';
+      paddingValue.textContent = (Math.round(item.padding || 0)) + 'px';
+      paddingSlider.addEventListener('input', () => {
+        paddingValue.textContent = paddingSlider.value + 'px';
+        DocModel.setPadding(item.id, +paddingSlider.value, { origin: 'panel' });
+      });
+      paddingRow.body.appendChild(paddingSlider);
+      paddingRow.body.appendChild(paddingValue);
+      shapeControls.appendChild(paddingRow.row);
+
       row.appendChild(meta);
       row.appendChild(shapeControls);
       row.addEventListener('click', (e) => {
@@ -1963,7 +2331,7 @@
         App.notifyFocus(item.id, 'panel');
       });
 
-      return { row, fillPicker, borderPicker, radiusSlider, radiusValue };
+      return { row, fillPicker, borderPicker, radiusSlider, radiusValue, paddingSlider, paddingValue };
     }
 
     function buildIconRow(item) {
@@ -1978,6 +2346,10 @@
       tag.className = 'block-tag tag-icon-svg';
       tag.textContent = 'SVG';
       meta.appendChild(tag);
+      const iconSpacer = document.createElement('span');
+      iconSpacer.className = 'block-meta-spacer';
+      meta.appendChild(iconSpacer);
+      meta.appendChild(buildRowActions(item));
 
       const iconRow = document.createElement('div');
       iconRow.className = 'icon-row';
@@ -2049,6 +2421,10 @@
       tag.className = 'block-tag tag-img';
       tag.textContent = 'IMG';
       meta.appendChild(tag);
+      const imgSpacer = document.createElement('span');
+      imgSpacer.className = 'block-meta-spacer';
+      meta.appendChild(imgSpacer);
+      meta.appendChild(buildRowActions(item));
 
       const wrap = document.createElement('div');
       wrap.className = 'image-row';
@@ -2242,6 +2618,39 @@
       syncPicker(entry.colorPicker, color);
     }
 
+    function updateItemHref(id, href) {
+      const entry = rowById.get(id);
+      if (!entry || !entry.hrefInput) return;
+      if (document.activeElement === entry.hrefInput) return;
+      if (entry.hrefInput.value !== href) entry.hrefInput.value = href;
+    }
+
+    function updateItemFontFamily(id, fontFamily) {
+      const entry = rowById.get(id);
+      if (!entry || !entry.fontSelect) return;
+      // If the value isn't in the existing options, add a "Custom" option.
+      const select = entry.fontSelect;
+      let found = false;
+      for (const opt of select.options) {
+        if (opt.value === fontFamily) { opt.selected = true; found = true; break; }
+      }
+      if (!found && fontFamily) {
+        const opt = document.createElement('option');
+        opt.value = fontFamily;
+        opt.textContent = 'Custom';
+        opt.selected = true;
+        select.insertBefore(opt, select.firstChild.nextSibling);
+      }
+    }
+
+    function updateItemPadding(id, padding) {
+      const entry = rowById.get(id);
+      if (!entry || !entry.paddingSlider) return;
+      if (document.activeElement === entry.paddingSlider) return;
+      entry.paddingSlider.value = String(Math.round(padding));
+      entry.paddingValue.textContent = Math.round(padding) + 'px';
+    }
+
     function updateItemImageSrc(id, src) {
       const entry = rowById.get(id);
       if (!entry || !entry.thumb) return;
@@ -2376,9 +2785,10 @@
     return {
       render, focusBlock, runSearch, reset,
       updateItemText, updateItemColor,
-      updateItemBgColor, updateItemBorderColor, updateItemBorderRadius,
+      updateItemBgColor, updateItemBorderColor, updateItemBorderRadius, updateItemPadding,
       updateItemIconColor,
-      updateItemImageSrc, updateItemImageAlt
+      updateItemImageSrc, updateItemImageAlt,
+      updateItemHref, updateItemFontFamily
     };
   })();
 
@@ -2530,6 +2940,23 @@
         } else if (kind === 'iconColor') {
           PreviewFrame.updateIconColor(id, after);
           if (origin !== 'panel') SidePanel.updateItemIconColor(id, after);
+        } else if (kind === 'padding') {
+          PreviewFrame.updateElementStyle(id, 'padding', after + 'px');
+          if (origin !== 'panel') SidePanel.updateItemPadding(id, after);
+        } else if (kind === 'href') {
+          PreviewFrame.updateElementAttr(id, 'href', after);
+          if (origin !== 'panel') SidePanel.updateItemHref(id, after);
+        } else if (kind === 'fontFamily') {
+          PreviewFrame.updateElementStyle(id, 'font-family', after);
+          if (origin !== 'panel') SidePanel.updateItemFontFamily(id, after);
+        } else if (kind === 'delete') {
+          PreviewFrame.removeElement(id);
+          SidePanel.render();
+        } else if (kind === 'move') {
+          PreviewFrame.moveElement(id, after);
+          SidePanel.render();
+          // Bring the moved row back into view with a focus pulse.
+          setTimeout(() => SidePanel.focusBlock(id), 0);
         } else if (kind === 'imageSrc') {
           PreviewFrame.updateElementAttr(id, 'src', after);
           if (origin !== 'panel') SidePanel.updateItemImageSrc(id, after);
@@ -2538,8 +2965,9 @@
           if (origin !== 'panel') SidePanel.updateItemImageAlt(id, after);
         }
 
-        // Record history for user-initiated edits, not for replays.
-        if (origin === 'panel' || origin === 'iframe' || origin === 'replace') {
+        // Record history for user-initiated edits, not for replays. Skip
+        // 'delete' (no undo for destructive ops in this MVP).
+        if ((origin === 'panel' || origin === 'iframe' || origin === 'replace') && kind !== 'delete') {
           History.record({ kind, id, before, after });
         }
         scheduleAutosave();
@@ -2606,7 +3034,11 @@
       else if (op.kind === 'bgColor') DocModel.setBgColor(op.id, op.value, opts);
       else if (op.kind === 'borderColor') DocModel.setBorderColor(op.id, op.value, opts);
       else if (op.kind === 'borderRadius') DocModel.setBorderRadius(op.id, op.value, opts);
+      else if (op.kind === 'padding') DocModel.setPadding(op.id, op.value, opts);
       else if (op.kind === 'iconColor') DocModel.setIconColor(op.id, op.value, opts);
+      else if (op.kind === 'href') DocModel.setHref(op.id, op.value, opts);
+      else if (op.kind === 'fontFamily') DocModel.setFontFamily(op.id, op.value, opts);
+      else if (op.kind === 'move') DocModel.moveItem(op.id, op.value, opts);
       else if (op.kind === 'imageSrc') DocModel.setImageSrc(op.id, op.value, opts);
       else if (op.kind === 'imageAlt') DocModel.setImageAlt(op.id, op.value, opts);
     }
