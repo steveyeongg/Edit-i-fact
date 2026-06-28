@@ -258,8 +258,8 @@
     line-height: 1.5;
   }
   .drop-zone .accent-line strong {
-    color: var(--text-muted);
-    font-weight: 500;
+    color: var(--accent);
+    font-weight: 600;
   }
   .link-btn {
     color: var(--accent);
@@ -978,8 +978,8 @@
       <h2>Drop your .html file here</h2>
       <p class="sub">or <button class="link-btn" id="empty-upload" type="button">choose a file</button> from your computer</p>
       <div class="accent-line">
-        <strong>Edit HTML artifacts like PowerPoint</strong><br/>
-        without touching code.
+        <strong>In your browser only.</strong><br/>
+        Nothing leaves your machine.
       </div>
       <div class="error-banner" id="error-banner"></div>
     </div>
@@ -1148,7 +1148,7 @@
   // Items can be type:'text' | 'image' | 'shape' | 'icon'. Mutations fire one
   // onChange event with { kind, id, before, after, origin } — kind is the
   // property that changed: 'text' | 'color' | 'bgColor' | 'borderColor' |
-  // 'borderRadius' | 'iconColor' | 'imageSrc' | 'imageAlt'.
+  // 'borderRadius' | 'fontFamily' | 'fontSize' | 'iconColor' | 'imageSrc' | 'imageAlt'.
   //
   // Shapes are detected in two phases: parse-time tags candidates, then after
   // the iframe loads we check computed styles to confirm which candidates
@@ -1184,7 +1184,9 @@
               text: n.textContent,
               href: n.tagName === 'A' ? n.getAttribute('href') : null,
               color: n.style ? (n.style.color || '') : '',
-              bgColor: n.style ? (n.style.backgroundColor || '') : ''
+              bgColor: n.style ? (n.style.backgroundColor || '') : '',
+              fontFamily: n.style ? (n.style.fontFamily || '') : '',
+              fontSize: n.style ? (parseFloat(n.style.fontSize) || 0) : 0
             });
           } else if (cls.type === 'image') {
             items.push({
@@ -1210,6 +1212,17 @@
     function completeDetection(iframeDoc) {
       if (!doc || !iframeDoc) return;
       const win = iframeDoc.defaultView || window;
+
+      // Text sizing — many artifacts define typography via CSS classes, so
+      // parse-time inline style checks are not enough for a useful size slider.
+      for (const item of items) {
+        if (item.type !== 'text') continue;
+        const iframeEl = iframeDoc.querySelector('[data-edit-id="' + item.id + '"]');
+        if (!iframeEl) continue;
+        const cs = win.getComputedStyle(iframeEl);
+        const size = parseFloat(cs.fontSize) || 0;
+        if (size) item.fontSize = size;
+      }
 
       // Shapes
       for (const cand of pendingShapeCandidates) {
@@ -1468,11 +1481,74 @@
       const item = getItem(id);
       const el = getElement(id);
       if (!item || !el) return false;
+
+      const parent = el.parentNode;
+      const nextSibling = el.nextSibling;
+      // Capture every item being removed — the target plus any descendants
+      // (a shape can wrap text / icon / image items inside it).
+      const removedItems = items.filter(i => {
+        const e = getElement(i.id);
+        return e && (e === el || el.contains(e));
+      });
+
       el.remove();
-      // Remove this item and any descendant items whose source elements are
-      // now gone (shapes can wrap text/icon/image items).
       items = items.filter(i => getElement(i.id) !== null);
-      notify({ kind: 'delete', id, before: item, after: null, origin: options.origin || 'model' });
+
+      // Pass the restore data through `before` so undo can reconstruct the
+      // tree exactly. Live DOM-node references stay valid in memory — the
+      // element subtree isn't garbage-collected while we hold the reference.
+      notify({
+        kind: 'delete',
+        id,
+        before: { element: el, parent, nextSibling, removedItems, targetId: id },
+        after: null,
+        origin: options.origin || 'model'
+      });
+      return true;
+    }
+
+    function restoreItem(restoreData, options) {
+      options = options || {};
+      if (!restoreData) return false;
+      const { element, parent, nextSibling, removedItems, targetId } = restoreData;
+      if (!parent || !element) return false;
+
+      // Re-insert the element subtree at its original sibling position.
+      if (nextSibling && nextSibling.parentNode === parent) {
+        parent.insertBefore(element, nextSibling);
+      } else {
+        parent.appendChild(element);
+      }
+
+      // Re-add all items that were pruned, then resort by doc order.
+      for (const it of removedItems) {
+        if (!items.find(x => x.id === it.id)) items.push(it);
+      }
+      sortItemsByDocOrder();
+
+      const headId = targetId || (removedItems.length ? removedItems[0].id : null);
+      notify({
+        kind: 'restore',
+        id: headId,
+        before: null,
+        after: restoreData,
+        origin: options.origin || 'model'
+      });
+      return true;
+    }
+
+    function setFontSize(id, sizePx, options) {
+      options = options || {};
+      const item = getItem(id);
+      const el = getElement(id);
+      if (!item || !el || item.type !== 'text') return false;
+      const before = item.fontSize || 0;
+      const after = Math.max(0, Number(sizePx) || 0);
+      if (before === after) return false;
+      if (after) el.style.fontSize = after + 'px';
+      else el.style.removeProperty('font-size');
+      item.fontSize = after;
+      notify({ kind: 'fontSize', id, before, after, origin: options.origin || 'model' });
       return true;
     }
 
@@ -1572,6 +1648,8 @@
       // Note: do NOT clear listeners — App registers once at init.
       doc = null;
       items = [];
+      pendingShapeCandidates = [];
+      pendingIconCandidates = [];
       nextId = 0;
     }
 
@@ -1579,14 +1657,14 @@
       load, completeDetection, getItem, getElement, list, canMove,
       setText, setColor, setBgColor, setBorderColor, setBorderRadius, setPadding,
       setIconColor, setImageSrc, setImageAlt,
-      setHref, setFontFamily,
-      deleteItem, moveItem,
+      setHref, setFontFamily, setFontSize,
+      deleteItem, restoreItem, moveItem,
       onChange, serialize, serializeForPreview, reset
     };
   })();
 
   // ─────────────────────────────────────────────
-  // History — undo/redo of text deltas
+  // History — undo/redo of edit deltas
   // ─────────────────────────────────────────────
   const History = (() => {
     const MAX = 100;
@@ -1922,7 +2000,7 @@
     let rowById = new Map();
     let sectionHeaderByType = {};
     let activeId = null;
-    let expandedByType = { text: true, image: true };
+    let expandedByType = { text: true, shape: true, icon: true, image: true };
 
     const CHEVRON_SVG = '<svg class="panel-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
 
@@ -2086,6 +2164,26 @@
       fontRow.appendChild(fontSelect);
       row.appendChild(fontRow);
 
+      // Font size slider
+      const sizeRow = makeStyleRow('Size');
+      const fontSizeSlider = document.createElement('input');
+      fontSizeSlider.type = 'range';
+      fontSizeSlider.min = '8';
+      fontSizeSlider.max = '96';
+      fontSizeSlider.step = '1';
+      fontSizeSlider.value = String(Math.round(item.fontSize || 16));
+      fontSizeSlider.className = 'radius-slider';
+      const fontSizeValue = document.createElement('span');
+      fontSizeValue.className = 'style-value';
+      fontSizeValue.textContent = Math.round(item.fontSize || 16) + 'px';
+      fontSizeSlider.addEventListener('input', () => {
+        fontSizeValue.textContent = fontSizeSlider.value + 'px';
+        DocModel.setFontSize(item.id, +fontSizeSlider.value, { origin: 'panel' });
+      });
+      sizeRow.body.appendChild(fontSizeSlider);
+      sizeRow.body.appendChild(fontSizeValue);
+      row.appendChild(sizeRow.row);
+
       // Link href (for <a> elements only)
       let hrefInput = null;
       if (item.tag === 'A') {
@@ -2102,11 +2200,11 @@
 
       row.addEventListener('click', (e) => {
         if (e.target === textarea) return;
-        if (e.target.closest('.color-control, .row-actions, .font-select, .href-input, .extras-row')) return;
+        if (e.target.closest('.color-control, .row-actions, .font-select, .href-input, .extras-row, .style-row, input, button, label')) return;
         textarea.focus();
       });
 
-      return { row, textarea, textColor, bgColor, fontSelect, hrefInput };
+      return { row, textarea, textColor, bgColor, fontSelect, fontSizeSlider, fontSizeValue, hrefInput };
     }
 
     // Curated font family choices. Empty string = inherit (reset).
@@ -2146,7 +2244,7 @@
         const label = item.type === 'text' ? item.tag :
                       item.type === 'shape' ? (item.label || 'shape') :
                       item.type === 'icon' ? 'icon' : 'image';
-        if (window.confirm('Delete this ' + label + '? This cannot be undone.')) {
+        if (window.confirm('Delete this ' + label + '? You can undo it with ⌘Z / Ctrl+Z.')) {
           DocModel.deleteItem(item.id, { origin: 'panel' });
         }
       });
@@ -2643,6 +2741,15 @@
       }
     }
 
+    function updateItemFontSize(id, fontSize) {
+      const entry = rowById.get(id);
+      if (!entry || !entry.fontSizeSlider) return;
+      if (document.activeElement === entry.fontSizeSlider) return;
+      const value = Math.round(fontSize || 16);
+      entry.fontSizeSlider.value = String(value);
+      entry.fontSizeValue.textContent = value + 'px';
+    }
+
     function updateItemPadding(id, padding) {
       const entry = rowById.get(id);
       if (!entry || !entry.paddingSlider) return;
@@ -2670,7 +2777,7 @@
       let matches = 0;
       const items = DocModel.list();
       const searchActive = q.length > 0;
-      const matchedByType = { text: 0, image: 0 };
+      const matchedByType = { text: 0, shape: 0, icon: 0, image: 0 };
 
       for (const item of items) {
         const entry = rowById.get(item.id);
@@ -2788,7 +2895,7 @@
       updateItemBgColor, updateItemBorderColor, updateItemBorderRadius, updateItemPadding,
       updateItemIconColor,
       updateItemImageSrc, updateItemImageAlt,
-      updateItemHref, updateItemFontFamily
+      updateItemHref, updateItemFontFamily, updateItemFontSize
     };
   })();
 
@@ -2949,9 +3056,20 @@
         } else if (kind === 'fontFamily') {
           PreviewFrame.updateElementStyle(id, 'font-family', after);
           if (origin !== 'panel') SidePanel.updateItemFontFamily(id, after);
+        } else if (kind === 'fontSize') {
+          PreviewFrame.updateElementStyle(id, 'font-size', after ? (after + 'px') : '');
+          if (origin !== 'panel') SidePanel.updateItemFontSize(id, after);
         } else if (kind === 'delete') {
           PreviewFrame.removeElement(id);
           SidePanel.render();
+        } else if (kind === 'restore') {
+          PreviewFrame.render(() => {
+            SidePanel.render();
+            if (id) {
+              SidePanel.focusBlock(id);
+              PreviewFrame.focusBlock(id);
+            }
+          });
         } else if (kind === 'move') {
           PreviewFrame.moveElement(id, after);
           SidePanel.render();
@@ -2965,9 +3083,9 @@
           if (origin !== 'panel') SidePanel.updateItemImageAlt(id, after);
         }
 
-        // Record history for user-initiated edits, not for replays. Skip
-        // 'delete' (no undo for destructive ops in this MVP).
-        if ((origin === 'panel' || origin === 'iframe' || origin === 'replace') && kind !== 'delete') {
+        // Record history for user-initiated edits, not for history replays.
+        // Deletes are now undoable because DocModel passes restore data in `before`.
+        if (origin === 'panel' || origin === 'iframe' || origin === 'replace') {
           History.record({ kind, id, before, after });
         }
         scheduleAutosave();
@@ -3038,6 +3156,11 @@
       else if (op.kind === 'iconColor') DocModel.setIconColor(op.id, op.value, opts);
       else if (op.kind === 'href') DocModel.setHref(op.id, op.value, opts);
       else if (op.kind === 'fontFamily') DocModel.setFontFamily(op.id, op.value, opts);
+      else if (op.kind === 'fontSize') DocModel.setFontSize(op.id, op.value, opts);
+      else if (op.kind === 'delete') {
+        if (op.value && op.value.element) DocModel.restoreItem(op.value, opts);
+        else DocModel.deleteItem(op.id, opts);
+      }
       else if (op.kind === 'move') DocModel.moveItem(op.id, op.value, opts);
       else if (op.kind === 'imageSrc') DocModel.setImageSrc(op.id, op.value, opts);
       else if (op.kind === 'imageAlt') DocModel.setImageAlt(op.id, op.value, opts);
