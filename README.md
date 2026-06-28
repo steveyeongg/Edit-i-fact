@@ -42,6 +42,17 @@ The side panel groups edits into four categories. Sections are collapsible — c
 - **Autosave** — your draft survives an accidental refresh, stored in `localStorage`.
 - **Zero install** — one self-contained `index.html`. No build, no server.
 
+## How it works under the hood
+
+One self-contained `index.html`. Inside, vanilla JS organised as small modules: `FileIO`, `Detector`, `DocModel`, `PreviewFrame`, `SidePanel`, `History`, `App`.
+
+When you upload a file, it's parsed once with `DOMParser`. Detection runs in two phases:
+
+1. **Parse-time** — each text block, image, and shape/icon candidate is tagged with a stable `data-edit-id`. The parsed `Document` is the single source of truth.
+2. **Post-render** — once the iframe has rendered, `DocModel.completeDetection` reads computed styles to confirm which shape candidates actually have a visible background or border (most artifacts style via CSS classes, so inline-style detection alone isn't enough). Candidates that don't qualify have their `data-edit-id` stripped so they don't intercept clicks.
+
+Edits in either surface flow through one of `setText` / `setColor` / `setBgColor` / `setBorderColor` / `setBorderRadius` / `setIconColor` / `setImageSrc` / `setImageAlt`, which mutate the source document and mirror the change to whichever surface didn't originate the edit. The `data-edit-id` attributes are stripped on download, so the output is byte-clean.
+
 ## Keyboard shortcuts
 
 | Action | Shortcut |
@@ -54,18 +65,3 @@ The side panel groups edits into four categories. Sections are collapsible — c
 | Commit inline edit | Enter |
 | Cancel inline edit | Esc |
 | Toggle a section | Click the header (or Enter / Space when focused) |
-
-## How it works under the hood
-
-One self-contained `index.html`. Inside, vanilla JS organised as small modules: `FileIO`, `Detector`, `DocModel`, `PreviewFrame`, `SidePanel`, `History`, `App`.
-
-When you upload a file, it's parsed once with `DOMParser`. Detection runs in two phases:
-
-1. **Parse-time** — each text block, image, and shape/icon candidate is tagged with a stable `data-edit-id`. The parsed `Document` is the single source of truth.
-2. **Post-render** — once the iframe has rendered, `DocModel.completeDetection` reads computed styles to confirm which shape candidates actually have a visible background or border (most artifacts style via CSS classes, so inline-style detection alone isn't enough). Candidates that don't qualify have their `data-edit-id` stripped so they don't intercept clicks.
-
-Edits in either surface flow through one of `setText` / `setColor` / `setBgColor` / `setBorderColor` / `setBorderRadius` / `setIconColor` / `setImageSrc` / `setImageAlt`, which mutate the source document and mirror the change to whichever surface didn't originate the edit. The `data-edit-id` attributes are stripped on download, so the output is byte-clean.
-
-## What's not in MVP
-
-Slide-section navigator, multi-file projects, cloud save, real-time collab, link/href editing, font-family swapping, padding/spacing controls. The architecture leaves room for them.

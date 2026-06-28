@@ -1,57 +1,79 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" font-family="-apple-system, 'Inter', system-ui, 'Segoe UI', sans-serif" role="img" aria-label="Step 3: Download the edited HTML file with everything else preserved">
   <defs>
+    <linearGradient id="s3FileGrad" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#DCFCE7"/>
+      <stop offset="1" stop-color="#EEF2FF"/>
+    </linearGradient>
+    <linearGradient id="s3BrandGrad" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#4F46E5"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
     <filter id="s3Shadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#0F172A" flood-opacity="0.08"/>
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.10"/>
+    </filter>
+    <filter id="s3FileShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#15803D" flood-opacity="0.18"/>
     </filter>
   </defs>
 
   <rect width="600" height="400" fill="#FAFAFA"/>
 
-  <!-- Step number -->
-  <circle cx="40" cy="40" r="14" fill="#4F46E5"/>
-  <text x="40" y="45" text-anchor="middle" font-size="13" font-weight="700" fill="white">3</text>
-  <text x="64" y="46" font-size="15" font-weight="600" fill="#111827" letter-spacing="-0.2">Download</text>
+  <!-- Step pill -->
+  <rect x="28" y="28" width="108" height="26" rx="13" fill="#DCFCE7"/>
+  <circle cx="44" cy="41" r="9" fill="#15803D"/>
+  <text x="44" y="45" text-anchor="middle" font-size="11" font-weight="700" fill="white">3</text>
+  <text x="60" y="45" font-size="12" font-weight="600" fill="#15803D" letter-spacing="0.5">DOWNLOAD</text>
 
-  <!-- Toolbar fragment with download button highlighted -->
+  <!-- Toolbar fragment -->
   <g filter="url(#s3Shadow)">
-    <rect x="40" y="92" width="520" height="56" rx="10" fill="white" stroke="#E5E7EB"/>
+    <rect x="48" y="90" width="504" height="58" rx="10" fill="white" stroke="#E5E7EB"/>
   </g>
-  <rect x="56" y="106" width="22" height="22" rx="6" fill="#4F46E5"/>
-  <text x="67" y="123" text-anchor="middle" font-size="12" font-weight="700" fill="white">E</text>
-  <text x="86" y="125" font-size="13" font-weight="600" fill="#111827">Edit-i-fact</text>
-  <rect x="178" y="110" width="200" height="18" rx="5" fill="#F4F4F5" stroke="#E5E7EB"/>
-  <text x="186" y="123" font-size="10.5" font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#6B7280">Q4-launch-deck.html</text>
+  <rect x="64" y="105" width="22" height="22" rx="6" fill="url(#s3BrandGrad)"/>
+  <text x="75" y="122" text-anchor="middle" font-size="12" font-weight="700" fill="white" font-family="ui-monospace, monospace">E</text>
+  <text x="94" y="119" font-size="13" font-weight="700" fill="#111827">Edit-i-fact</text>
+  <text x="94" y="131" font-size="9" fill="#6B7280">Edit HTML artifacts like PowerPoint</text>
 
-  <!-- Download button (highlighted with focus ring) -->
-  <rect x="436" y="104" width="108" height="32" rx="7" fill="#4F46E5"/>
-  <rect x="430" y="98" width="120" height="44" rx="10" fill="none" stroke="#4F46E5" stroke-opacity="0.25" stroke-width="3"/>
-  <path d="M453 116 v6 m-5 -5 l5 5 l5 -5 m-13 8 h16" stroke="white" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="504" y="125" text-anchor="middle" font-size="13" font-weight="600" fill="white">Download</text>
+  <!-- Filename chip -->
+  <rect x="232" y="108" width="180" height="18" rx="5" fill="#F4F4F5" stroke="#E5E7EB"/>
+  <text x="240" y="121" font-size="10" font-family="ui-monospace, monospace" fill="#6B7280">aurora-landing.html</text>
 
-  <!-- File flow arrow -->
-  <path d="M300 168 v34" stroke="#9CA3AF" stroke-width="1.8" stroke-dasharray="4 4" fill="none"/>
-  <path d="M294 198 l6 6 l6 -6" stroke="#9CA3AF" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Download button with focus ring -->
+  <rect x="424" y="100" width="116" height="38" rx="9" fill="none" stroke="#4F46E5" stroke-opacity="0.25" stroke-width="4"/>
+  <rect x="430" y="106" width="104" height="26" rx="6" fill="#4F46E5"/>
+  <path d="M447 116 v6 m-5 -5 l5 5 l5 -5 m-13 8 h16" stroke="white" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="498" y="123" text-anchor="middle" font-size="12.5" font-weight="600" fill="white">Download</text>
+
+  <!-- Flow arrow -->
+  <path d="M300 168 v32" stroke="#9CA3AF" stroke-width="2" stroke-dasharray="3 4" fill="none"/>
+  <path d="M294 196 l6 6 l6 -6" stroke="#9CA3AF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 
   <!-- Output file card -->
-  <g filter="url(#s3Shadow)">
-    <rect x="180" y="220" width="240" height="116" rx="10" fill="white" stroke="#E5E7EB"/>
+  <g filter="url(#s3FileShadow)">
+    <rect x="156" y="220" width="288" height="124" rx="14" fill="white" stroke="#E5E7EB"/>
   </g>
 
   <!-- File icon -->
-  <g transform="translate(204, 240)">
-    <rect x="0" y="0" width="40" height="50" rx="5" fill="#EEF2FF" stroke="#4F46E5" stroke-width="1.6"/>
-    <path d="M28 0 v10 h12" fill="none" stroke="#4F46E5" stroke-width="1.6" stroke-linejoin="round"/>
-    <line x1="8" y1="22" x2="28" y2="22" stroke="#4F46E5" stroke-width="1.4" stroke-linecap="round"/>
-    <line x1="8" y1="30" x2="32" y2="30" stroke="#4F46E5" stroke-width="1.4" stroke-linecap="round"/>
-    <line x1="8" y1="38" x2="22" y2="38" stroke="#4F46E5" stroke-width="1.4" stroke-linecap="round"/>
+  <g transform="translate(184, 244)">
+    <rect x="0" y="0" width="44" height="56" rx="6" fill="url(#s3FileGrad)" stroke="#15803D" stroke-width="1.4"/>
+    <path d="M30 0 v12 h14" fill="none" stroke="#15803D" stroke-width="1.4" stroke-linejoin="round"/>
+    <text x="22" y="30" text-anchor="middle" font-size="8" font-weight="700" fill="#15803D" font-family="ui-monospace, monospace">HTML</text>
+    <circle cx="22" cy="42" r="8" fill="#DCFCE7"/>
+    <path d="M18 42 l3 3 l5 -5" stroke="#15803D" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 
-  <text x="262" y="260" font-size="13" font-weight="600" fill="#111827" font-family="ui-monospace, 'SF Mono', Menlo, monospace">Q4-launch-deck</text>
-  <text x="262" y="278" font-size="12.5" font-weight="600" fill="#4F46E5" font-family="ui-monospace, 'SF Mono', Menlo, monospace">-edited.html</text>
+  <text x="244" y="262" font-size="12.5" font-weight="600" fill="#111827" font-family="ui-monospace, monospace">aurora-landing</text>
+  <text x="244" y="280" font-size="12" font-weight="600" fill="#4F46E5" font-family="ui-monospace, monospace">-edited.html</text>
 
-  <text x="262" y="304" font-size="11.5" fill="#6B7280">Styles, scripts, layout</text>
-  <text x="262" y="320" font-size="11.5" fill="#6B7280">— all preserved.</text>
+  <!-- Preservation tags -->
+  <g transform="translate(244, 300)">
+    <rect x="0" y="0" width="58" height="16" rx="8" fill="#F0FDF4" stroke="#BBF7D0"/>
+    <text x="29" y="11" text-anchor="middle" font-size="9" font-weight="600" fill="#15803D">Styles ✓</text>
+    <rect x="64" y="0" width="62" height="16" rx="8" fill="#F0FDF4" stroke="#BBF7D0"/>
+    <text x="95" y="11" text-anchor="middle" font-size="9" font-weight="600" fill="#15803D">Scripts ✓</text>
+    <rect x="130" y="0" width="58" height="16" rx="8" fill="#F0FDF4" stroke="#BBF7D0"/>
+    <text x="159" y="11" text-anchor="middle" font-size="9" font-weight="600" fill="#15803D">Layout ✓</text>
+  </g>
 
   <!-- Caption -->
-  <text x="300" y="370" text-anchor="middle" font-size="12.5" fill="#6B7280">Saved next to your original file. Open it anywhere.</text>
+  <text x="300" y="372" text-anchor="middle" font-size="12" fill="#6B7280">Self-contained .html file. Open it anywhere.</text>
 </svg>
