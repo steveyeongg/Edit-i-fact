@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aurora — Quiet productivity for makers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAFAF5;
+    --surface: #FFFFFF;
+    --surface-2: #F4F4EF;
+    --ink: #18181B;
+    --muted: #52525B;
+    --subtle: #A1A1AA;
+    --border: #E4E4E7;
+    --border-strong: #D4D4D8;
+
+    --accent: #4F46E5;
+    --accent-2: #7C3AED;
+    --accent-soft: #EEF2FF;
+    --gold: #D97706;
+    --gold-soft: #FEF3C7;
+    --rose: #DB2777;
+    --rose-soft: #FCE7F3;
+    --sage: #15803D;
+    --sage-soft: #DCFCE7;
+
+    --display: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+    --r-sm: 8px;
+    --r: 14px;
+    --r-lg: 22px;
+    --r-xl: 28px;
+
+    --sh-sm: 0 1px 2px rgba(24, 24, 27, .04), 0 1px 3px rgba(24, 24, 27, .04);
+    --sh: 0 6px 16px rgba(24, 24, 27, .06), 0 1px 3px rgba(24, 24, 27, .04);
+    --sh-lg: 0 24px 48px rgba(24, 24, 27, .12), 0 4px 12px rgba(24, 24, 27, .04);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { font-family: var(--sans); background: var(--bg); color: var(--ink); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  img { display: block; max-width: 100%; }
+  button { font: inherit; background: none; border: none; cursor: pointer; color: inherit; }
+
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 32px; }
+  .container-wide { max-width: 1320px; margin: 0 auto; padding: 0 32px; }
+
+  /* ─────── Nav ─────── */
+  nav {
+    padding: 22px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1320px;
+    margin: 0 auto;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+  }
+  .brand-icon {
+    width: 30px; height: 30px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+    border-radius: 9px;
+    display: grid; place-items: center;
+    color: white;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, .3);
+  }
+  .brand-icon svg { width: 16px; height: 16px; }
+  .nav-links {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+  }
+  .nav-links a {
+    font-size: 14.5px;
+    color: var(--muted);
+    font-weight: 500;
+    transition: color .15s;
+  }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-cta {
+    padding: 9px 18px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    transition: transform .15s;
+  }
+  .nav-cta:hover { transform: translateY(-1px); }
+
+  /* ─────── Hero ─────── */
+  .hero {
+    padding: 80px 32px 100px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(800px circle at 50% -20%, rgba(124, 58, 237, 0.1), transparent 60%),
+      radial-gradient(600px circle at 20% 110%, rgba(217, 119, 6, 0.08), transparent 60%);
+    z-index: 0;
+    pointer-events: none;
+  }
+  .hero > * { position: relative; z-index: 1; }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px 6px 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-bottom: 28px;
+    box-shadow: var(--sh-sm);
+  }
+  .eyebrow-dot {
+    width: 22px; height: 22px;
+    background: var(--gold-soft);
+    border-radius: 999px;
+    display: grid; place-items: center;
+    color: var(--gold);
+  }
+  .eyebrow-dot svg { width: 12px; height: 12px; }
+
+  .hero h1 {
+    font-family: var(--display);
+    font-size: clamp(48px, 7vw, 88px);
+    font-weight: 400;
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    margin-bottom: 26px;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .hero h1 em {
+    font-style: italic;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--rose) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero .lede {
+    font-size: 20px;
+    color: var(--muted);
+    max-width: 620px;
+    margin: 0 auto 42px;
+    line-height: 1.55;
+  }
+  .hero-ctas {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 56px;
+  }
+  .btn-primary {
+    padding: 14px 26px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: white;
+    font-weight: 600;
+    font-size: 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform .15s;
+    box-shadow: var(--sh);
+  }
+  .btn-primary:hover { transform: translateY(-1px); }
+  .btn-primary svg { width: 14px; height: 14px; }
+  .btn-ghost {
+    padding: 14px 26px;
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 15px;
+    border: 1px solid var(--border);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all .15s;
+  }
+  .btn-ghost:hover { background: var(--surface-2); border-color: var(--border-strong); }
+  .btn-ghost svg { width: 14px; height: 14px; }
+  .trust {
+    font-size: 13px;
+    color: var(--subtle);
+    letter-spacing: 0.04em;
+  }
+
+  /* ─────── Stats ─────── */
+  .stats {
+    padding: 0 32px 100px;
+  }
+  .stats-grid {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    padding: 36px 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--sh-sm);
+  }
+  .stat {
+    text-align: center;
+  }
+  .stat-num {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 44px;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    line-height: 1.05;
+    margin-bottom: 6px;
+  }
+  .stat-num .star {
+    color: var(--gold);
+    margin-left: 2px;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .stat-num .star svg { width: 28px; height: 28px; }
+  .stat-label {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  /* ─────── Section heading ─────── */
+  .section {
+    padding: 80px 32px;
+  }
+  .section-heading {
+    max-width: 700px;
+    margin: 0 auto 56px;
+    text-align: center;
+  }
+  .section-heading .label {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+  .section-heading h2 {
+    font-family: var(--display);
+    font-size: clamp(34px, 4.5vw, 52px);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    color: var(--ink);
+    margin-bottom: 14px;
+  }
+  .section-heading p {
+    font-size: 17px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* ─────── Features ─────── */
+  .feature-grid {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+  }
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 32px 28px;
+    transition: all .2s ease;
+    position: relative;
+  }
+  .feature-card:hover {
+    border-color: var(--border-strong);
+    transform: translateY(-2px);
+    box-shadow: var(--sh);
+  }
+  .feature-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 24px;
+  }
+  .feature-icon svg { width: 26px; height: 26px; }
+  .feature-icon.indigo { background: var(--accent-soft); color: var(--accent); }
+  .feature-icon.rose { background: var(--rose-soft); color: var(--rose); }
+  .feature-icon.sage { background: var(--sage-soft); color: var(--sage); }
+  .feature-card h3 {
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+    color: var(--ink);
+  }
+  .feature-card p {
+    font-size: 14.5px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* ─────── Showcase ─────── */
+  .showcase {
+    padding: 0 32px 80px;
+  }
+  .showcase-card {
+    max-width: 1180px;
+    margin: 0 auto;
+    background: linear-gradient(135deg, #1E1B4B 0%, #4F46E5 100%);
+    border-radius: var(--r-xl);
+    padding: 56px 64px;
+    color: white;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+    overflow: hidden;
+    position: relative;
+  }
+  .showcase-card::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .showcase-text { position: relative; z-index: 1; }
+  .showcase-card h2 {
+    font-family: var(--display);
+    font-size: 42px;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-weight: 400;
+    margin-bottom: 18px;
+  }
+  .showcase-card p {
+    font-size: 17px;
+    color: rgba(255, 255, 255, 0.78);
+    line-height: 1.6;
+    margin-bottom: 28px;
+  }
+  .showcase-image {
+    border-radius: var(--r);
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 8px;
+    position: relative;
+    z-index: 1;
+  }
+  .showcase-image img { width: 100%; border-radius: 10px; }
+  .btn-on-dark {
+    padding: 14px 26px;
+    border-radius: 999px;
+    background: white;
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform .15s;
+  }
+  .btn-on-dark:hover { transform: translateY(-1px); }
+
+  /* ─────── Pricing ─────── */
+  .pricing-grid {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+  }
+  .price-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 36px 32px;
+    position: relative;
+  }
+  .price-card.featured {
+    background: var(--ink);
+    color: white;
+    border-color: var(--ink);
+    transform: scale(1.02);
+    box-shadow: var(--sh-lg);
+  }
+  .price-card .pop {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 12px;
+    background: var(--gold);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-radius: 999px;
+  }
+  .price-card h3 {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+  }
+  .price-tagline {
+    font-size: 13.5px;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+  .price-card.featured .price-tagline { color: rgba(255, 255, 255, 0.7); }
+  .price-amount {
+    font-family: var(--display);
+    font-size: 56px;
+    line-height: 1;
+    letter-spacing: -0.025em;
+    font-weight: 400;
+    margin-bottom: 4px;
+  }
+  .price-period {
+    font-size: 13.5px;
+    color: var(--muted);
+    margin-bottom: 28px;
+  }
+  .price-card.featured .price-period { color: rgba(255, 255, 255, 0.7); }
+  .price-features {
+    list-style: none;
+    margin-bottom: 32px;
+  }
+  .price-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 14.5px;
+    color: var(--muted);
+  }
+  .price-card.featured .price-features li { color: rgba(255, 255, 255, 0.86); }
+  .price-features li svg {
+    width: 18px;
+    height: 18px;
+    color: var(--sage);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .price-card.featured .price-features li svg { color: #86EFAC; }
+  .price-cta {
+    width: 100%;
+    padding: 13px;
+    border-radius: 10px;
+    background: var(--ink);
+    color: white;
+    font-weight: 600;
+    font-size: 14.5px;
+    transition: transform .15s;
+  }
+  .price-card.featured .price-cta {
+    background: white;
+    color: var(--ink);
+  }
+  .price-card:not(.featured) .price-cta.ghost {
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--border-strong);
+  }
+  .price-cta:hover { transform: translateY(-1px); }
+
+  /* ─────── Testimonials ─────── */
+  .testimonials {
+    background: var(--surface-2);
+  }
+  .testimonial-grid {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+  }
+  .testimonial {
+    background: var(--surface);
+    border-radius: var(--r-lg);
+    padding: 32px 28px;
+    border: 1px solid var(--border);
+  }
+  .stars {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 18px;
+  }
+  .stars svg {
+    width: 18px;
+    height: 18px;
+    color: var(--gold);
+  }
+  .testimonial blockquote {
+    font-size: 16px;
+    line-height: 1.55;
+    color: var(--ink);
+    margin-bottom: 24px;
+    letter-spacing: -0.005em;
+  }
+  .testimonial-author {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .testimonial-author img {
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    object-fit: cover;
+  }
+  .author-name {
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .author-role {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* ─────── Compare ─────── */
+  .compare-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    box-shadow: var(--sh-sm);
+  }
+  .compare {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+  }
+  .compare th, .compare td {
+    padding: 16px 22px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .compare thead th {
+    background: var(--surface-2);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .compare thead th:first-child {
+    background: var(--surface);
+  }
+  .compare tbody th {
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .compare .col-us {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .compare td.check { color: var(--sage); }
+  .compare td.cross { color: var(--subtle); }
+  .compare td svg {
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+  }
+  .compare tbody tr:last-child td,
+  .compare tbody tr:last-child th { border-bottom: none; }
+
+  /* ─────── CTA ─────── */
+  .cta-section {
+    padding: 100px 32px 120px;
+    text-align: center;
+  }
+  .cta-card {
+    max-width: 880px;
+    margin: 0 auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    padding: 64px 48px;
+    box-shadow: var(--sh);
+  }
+  .cta-card h2 {
+    font-family: var(--display);
+    font-size: clamp(36px, 5vw, 56px);
+    letter-spacing: -0.025em;
+    font-weight: 400;
+    line-height: 1.05;
+    margin-bottom: 18px;
+  }
+  .cta-card p {
+    font-size: 17px;
+    color: var(--muted);
+    max-width: 540px;
+    margin: 0 auto 32px;
+    line-height: 1.55;
+  }
+
+  /* ─────── Footer ─────── */
+  footer {
+    padding: 36px 32px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--subtle);
+    font-size: 13px;
+  }
+  footer a {
+    color: var(--muted);
+    margin: 0 12px;
+    transition: color .15s;
+  }
+  footer a:hover { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<!-- ─────── Nav ─────── -->
+<nav>
+  <div class="brand">
+    <span class="brand-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/></svg>
+    </span>
+    <span>Aurora</span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#testimonials">Customers</a></li>
+    <li><a href="#login">Sign in</a></li>
+  </ul>
+  <a href="#start" class="nav-cta">Start free</a>
+</nav>
+
+<!-- ─────── Hero ─────── -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <span class="eyebrow">
+    <span class="eyebrow-dot">
+      <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 20.5 12 17 5.5 20.5 7.5 13.5 2 9 9 9"/></svg>
+    </span>
+    Now in public beta — join the waitlist
+  </span>
+  <h1>Quiet productivity<br/>for <em>makers</em>.</h1>
+  <p class="lede">Aurora protects deep work without the discipline tax. Build the rituals that fit your life, not someone else's.</p>
+  <div class="hero-ctas">
+    <a href="#start" class="btn-primary">
+      Start free for 14 days
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </a>
+    <a href="#demo" class="btn-ghost">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Watch the demo
+    </a>
+  </div>
+  <p class="trust">Trusted by 12,000 makers from teams at Linear, Vercel, Figma, and Notion.</p>
+</section>
+
+<!-- ─────── Stats ─────── -->
+<section class="stats">
+  <div class="stats-grid">
+    <div class="stat">
+      <div class="stat-num">12,000<span style="font-size:0.6em">+</span></div>
+      <div class="stat-label">Active makers worldwide</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">4.9<span class="star"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 20.5 12 17 5.5 20.5 7.5 13.5 2 9 9 9"/></svg></span></div>
+      <div class="stat-label">Average rating across 1.4k reviews</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">2.3<span style="font-size:0.5em">h</span></div>
+      <div class="stat-label">Saved per maker, every day</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">92<span style="font-size:0.6em">%</span></div>
+      <div class="stat-label">Retention after the first month</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────── Features ─────── -->
+<section class="section" id="features">
+  <div class="section-heading">
+    <span class="label">What's inside</span>
+    <h2>Three small things,<br/>done <em style="font-family:var(--display);font-style:italic;">very</em> well.</h2>
+    <p>Instead of yet another productivity overhaul, Aurora replaces three habits you already have — with calmer versions that compound.</p>
+  </div>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon indigo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      </div>
+      <h3>Focus mode</h3>
+      <p>Pick one thing. Aurora quiets every notification, hides the dock, and dims windows you aren't using — until you say otherwise.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon rose">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74"/><polyline points="21 4 21 9 16 9"/></svg>
+      </div>
+      <h3>Calm rhythms</h3>
+      <p>Pomodoros without the panic. Every cycle ends with a moment — a breath, a stretch, a glance out the window — not a klaxon.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon sage">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+      </div>
+      <h3>Daily review</h3>
+      <p>A two-line note at the end of the day — what landed, what didn't, what's next. So tomorrow starts already on the runway.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─────── Showcase ─────── -->
+<section class="showcase">
+  <div class="showcase-card">
+    <div class="showcase-text">
+      <h2>The first focus tool<br/>that respects your taste.</h2>
+      <p>Designed in Switzerland. Built by makers who got tired of fighting the tools meant to help them.</p>
+      <a href="#tour" class="btn-on-dark">
+        Take the 60-second tour
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+    </div>
+    <div class="showcase-image">
+      <img src="https://placehold.co/600x400/EEF2FF/4F46E5?text=Aurora+app+preview" alt="Aurora app preview" />
+    </div>
+  </div>
+</section>
+
+<!-- ─────── Pricing ─────── -->
+<section class="section" id="pricing">
+  <div class="section-heading">
+    <span class="label">Pricing</span>
+    <h2>Choose your <em>calm</em>.</h2>
+    <p>Start free. Move up only when it helps. Every plan includes the full focus engine.</p>
+  </div>
+  <div class="pricing-grid">
+
+    <div class="price-card">
+      <h3>Starter</h3>
+      <p class="price-tagline">For solo makers, forever.</p>
+      <div class="price-amount">$0</div>
+      <p class="price-period">Free, no card required</p>
+      <ul class="price-features">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Focus mode &amp; calm rhythms</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Daily review notes</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Local-only data</li>
+      </ul>
+      <button class="price-cta ghost">Start free</button>
+    </div>
+
+    <div class="price-card featured">
+      <span class="pop">Most popular</span>
+      <h3>Pro</h3>
+      <p class="price-tagline">For makers who ship.</p>
+      <div class="price-amount">$12</div>
+      <p class="price-period">per month, billed annually</p>
+      <ul class="price-features">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Everything in Starter</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Cross-device sync</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Calendar integration</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Custom reset rituals</li>
+      </ul>
+      <button class="price-cta">Start 14-day trial</button>
+    </div>
+
+    <div class="price-card">
+      <h3>Team</h3>
+      <p class="price-tagline">For small teams in flow.</p>
+      <div class="price-amount">$9</div>
+      <p class="price-period">per seat, billed annually</p>
+      <ul class="price-features">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Everything in Pro</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Shared focus sessions</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Admin &amp; SSO</li>
+      </ul>
+      <button class="price-cta ghost">Talk to sales</button>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─────── Testimonials ─────── -->
+<section class="section testimonials" id="testimonials">
+  <div class="section-heading">
+    <span class="label">Loved by makers</span>
+    <h2>Words from the <em>field</em>.</h2>
+    <p>Designers, founders, engineers, writers — anyone whose best work needs a long uninterrupted line.</p>
+  </div>
+  <div class="testimonial-grid">
+
+    <div class="testimonial">
+      <div class="stars">
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 20.5 12 17 5.5 20.5 7.5 13.5 2 9 9 9"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 20.5 12 17 5.5 20.5 7.5 13.5 2 9 9 9"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 20.5 12 17 5.5 20.5 7.5 13.5 2 9 9 9"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 20.5 12 17 5.5 20.5 7.5 13.5 2 9 9 9"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 20.5 12 17 5.5 20.5 7.5 13.5 2 9 9 9"/></svg>
+      </div>
+      <blockquote>"Aurora is the first focus app that doesn't make me feel guilty when I don't use it. Three weeks in and my afternoons are quietly mine again."</blockquote>
+      <div class="testimonial-author">
+        <img src="https://placehold.co/64x64/EEF2FF/4F46E5?text=SC" alt="Sarah Chen avatar" />
+        <div>
+          <div class="author-name">Sarah Chen</div>
+          <div class="author-role">Senior Designer, Linear</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="testimonial">
+      <div class="stars">
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 20.5 12 17 5.5 20.5 7.5 13.5 2 9 9 9"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 20.5 12 17 5.5 20.5 7.5 13.5 2 9 9 9"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 20.5 12 17 5.5 20.5 7.5 13.5 2 9 9 9"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 20.5 12 17 5.5 20.5 7.5 13.5 2 9 9 9"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 20.5 12 17 5.5 20.5 7.5 13.5 2 9 9 9"/></svg>
+      </div>
+      <blockquote>"I run a 4-person startup. Aurora's shared focus sessions saved my Mondays. We do two 90-minute blocks and Slack goes silent. Bliss."</blockquote>
+      <div class="testimonial-author">
+        <img src="https://placehold.co/64x64/FCE7F3/DB2777?text=ML" alt="Marcus Lee avatar" />
+        <div>
+          <div class="author-name">Marcus Lee</div>
+          <div class="author-role">Founder, Northwind Labs</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="testimonial">
+      <div class="stars">
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 20.5 12 17 5.5 20.5 7.5 13.5 2 9 9 9"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 20.5 12 17 5.5 20.5 7.5 13.5 2 9 9 9"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 20.5 12 17 5.5 20.5 7.5 13.5 2 9 9 9"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 20.5 12 17 5.5 20.5 7.5 13.5 2 9 9 9"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 20.5 12 17 5.5 20.5 7.5 13.5 2 9 9 9"/></svg>
+      </div>
+      <blockquote>"The daily review is genius. Two lines a day became a journal I actually keep. I look back at last month and the through-line is obvious."</blockquote>
+      <div class="testimonial-author">
+        <img src="https://placehold.co/64x64/DCFCE7/15803D?text=PP" alt="Priya Patel avatar" />
+        <div>
+          <div class="author-name">Priya Patel</div>
+          <div class="author-role">Staff Engineer, Vercel</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─────── Compare ─────── -->
+<section class="section">
+  <div class="section-heading">
+    <span class="label">How we stack up</span>
+    <h2>Built for <em>focus</em>,<br/>not feature counts.</h2>
+    <p>We say no to a lot, on purpose. Here's how Aurora compares to the tools you already have.</p>
+  </div>
+  <div class="compare-wrap">
+    <table class="compare">
+      <thead>
+        <tr>
+          <th></th>
+          <th class="col-us">Aurora</th>
+          <th>Notion</th>
+          <th>Linear</th>
+          <th>Asana</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">Focus mode</th>
+          <td class="col-us check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></td>
+          <td class="cross">—</td>
+          <td class="cross">—</td>
+          <td class="cross">—</td>
+        </tr>
+        <tr>
+          <th scope="row">Daily review notes</th>
+          <td class="col-us check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></td>
+          <td class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></td>
+          <td class="cross">—</td>
+          <td class="cross">—</td>
+        </tr>
+        <tr>
+          <th scope="row">Calm interface</th>
+          <td class="col-us check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></td>
+          <td class="cross">—</td>
+          <td class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></td>
+          <td class="cross">—</td>
+        </tr>
+        <tr>
+          <th scope="row">Privacy-first (local data)</th>
+          <td class="col-us check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></td>
+          <td class="cross">—</td>
+          <td class="cross">—</td>
+          <td class="cross">—</td>
+        </tr>
+        <tr>
+          <th scope="row">Starts at</th>
+          <td class="col-us">$0</td>
+          <td>$8/seat</td>
+          <td>$8/seat</td>
+          <td>$10.99/seat</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ─────── CTA ─────── -->
+<section class="cta-section">
+  <div class="cta-card">
+    <h2>Ready to focus?</h2>
+    <p>Start free. We'll never ask for a card you don't want to give. If Aurora isn't right for you, it's a quiet goodbye.</p>
+    <a href="#start" class="btn-primary">
+      Start free for 14 days
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </a>
+  </div>
+</section>
+
+<!-- ─────── Footer ─────── -->
+<footer>
+  <p>© 2026 Aurora Labs · <a href="#privacy">Privacy</a> · <a href="#terms">Terms</a> · <a href="#contact">Contact</a></p>
+</footer>
+
+</body>
+</html>

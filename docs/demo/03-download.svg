@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" font-family="-apple-system, 'Inter', system-ui, 'Segoe UI', sans-serif" role="img" aria-label="Step 3: Download the edited HTML file with everything else preserved">
+  <defs>
+    <filter id="s3Shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <rect width="600" height="400" fill="#FAFAFA"/>
+
+  <!-- Step number -->
+  <circle cx="40" cy="40" r="14" fill="#4F46E5"/>
+  <text x="40" y="45" text-anchor="middle" font-size="13" font-weight="700" fill="white">3</text>
+  <text x="64" y="46" font-size="15" font-weight="600" fill="#111827" letter-spacing="-0.2">Download</text>
+
+  <!-- Toolbar fragment with download button highlighted -->
+  <g filter="url(#s3Shadow)">
+    <rect x="40" y="92" width="520" height="56" rx="10" fill="white" stroke="#E5E7EB"/>
+  </g>
+  <rect x="56" y="106" width="22" height="22" rx="6" fill="#4F46E5"/>
+  <text x="67" y="123" text-anchor="middle" font-size="12" font-weight="700" fill="white">E</text>
+  <text x="86" y="125" font-size="13" font-weight="600" fill="#111827">Edit-i-fact</text>
+  <rect x="178" y="110" width="200" height="18" rx="5" fill="#F4F4F5" stroke="#E5E7EB"/>
+  <text x="186" y="123" font-size="10.5" font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#6B7280">Q4-launch-deck.html</text>
+
+  <!-- Download button (highlighted with focus ring) -->
+  <rect x="436" y="104" width="108" height="32" rx="7" fill="#4F46E5"/>
+  <rect x="430" y="98" width="120" height="44" rx="10" fill="none" stroke="#4F46E5" stroke-opacity="0.25" stroke-width="3"/>
+  <path d="M453 116 v6 m-5 -5 l5 5 l5 -5 m-13 8 h16" stroke="white" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="504" y="125" text-anchor="middle" font-size="13" font-weight="600" fill="white">Download</text>
+
+  <!-- File flow arrow -->
+  <path d="M300 168 v34" stroke="#9CA3AF" stroke-width="1.8" stroke-dasharray="4 4" fill="none"/>
+  <path d="M294 198 l6 6 l6 -6" stroke="#9CA3AF" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Output file card -->
+  <g filter="url(#s3Shadow)">
+    <rect x="180" y="220" width="240" height="116" rx="10" fill="white" stroke="#E5E7EB"/>
+  </g>
+
+  <!-- File icon -->
+  <g transform="translate(204, 240)">
+    <rect x="0" y="0" width="40" height="50" rx="5" fill="#EEF2FF" stroke="#4F46E5" stroke-width="1.6"/>
+    <path d="M28 0 v10 h12" fill="none" stroke="#4F46E5" stroke-width="1.6" stroke-linejoin="round"/>
+    <line x1="8" y1="22" x2="28" y2="22" stroke="#4F46E5" stroke-width="1.4" stroke-linecap="round"/>
+    <line x1="8" y1="30" x2="32" y2="30" stroke="#4F46E5" stroke-width="1.4" stroke-linecap="round"/>
+    <line x1="8" y1="38" x2="22" y2="38" stroke="#4F46E5" stroke-width="1.4" stroke-linecap="round"/>
+  </g>
+
+  <text x="262" y="260" font-size="13" font-weight="600" fill="#111827" font-family="ui-monospace, 'SF Mono', Menlo, monospace">Q4-launch-deck</text>
+  <text x="262" y="278" font-size="12.5" font-weight="600" fill="#4F46E5" font-family="ui-monospace, 'SF Mono', Menlo, monospace">-edited.html</text>
+
+  <text x="262" y="304" font-size="11.5" fill="#6B7280">Styles, scripts, layout</text>
+  <text x="262" y="320" font-size="11.5" fill="#6B7280">— all preserved.</text>
+
+  <!-- Caption -->
+  <text x="300" y="370" text-anchor="middle" font-size="12.5" fill="#6B7280">Saved next to your original file. Open it anywhere.</text>
+</svg>

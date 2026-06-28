@@ -1,0 +1,2698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Edit-i-fact — Edit HTML artifacts like PowerPoint</title>
+<style>
+  :root {
+    --bg: #FAFAFA;
+    --surface: #FFFFFF;
+    --surface-alt: #F4F4F5;
+    --border: #E5E7EB;
+    --border-strong: #D1D5DB;
+    --text: #111827;
+    --text-muted: #6B7280;
+    --text-subtle: #9CA3AF;
+    --accent: #4F46E5;
+    --accent-hover: #4338CA;
+    --accent-soft: #EEF2FF;
+    --danger: #DC2626;
+    --success: #059669;
+    --radius: 8px;
+    --radius-sm: 6px;
+    --radius-lg: 12px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px -2px rgba(0,0,0,0.04);
+    --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+  }
+  input, textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  /* ───── Toolbar ───── */
+  .toolbar {
+    height: 56px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 0 16px;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+  }
+  .brand-mark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: -0.01em;
+    flex-shrink: 0;
+  }
+  .brand-mark .dot {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, var(--accent) 0%, #7C3AED 100%);
+    border-radius: 7px;
+    display: grid; place-items: center;
+    color: white;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgba(79, 70, 229, 0.25);
+    flex-shrink: 0;
+  }
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    min-width: 0;
+  }
+  .brand-name {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+  .brand-tagline {
+    font-size: 10.5px;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin-top: 2px;
+    letter-spacing: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 380px;
+  }
+  @media (max-width: 1180px) {
+    .brand-tagline { display: none; }
+  }
+  .filename {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--text-muted);
+    padding: 4px 8px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: none;
+  }
+  .filename.visible { display: inline-block; }
+  .filename.dirty::after {
+    content: "•";
+    color: var(--accent);
+    margin-left: 4px;
+  }
+
+  .device-toggle {
+    display: inline-flex;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+    gap: 2px;
+  }
+  .device-toggle button {
+    padding: 5px 12px;
+    border-radius: 5px;
+    color: var(--text-muted);
+    font-size: 13px;
+    transition: all 0.12s ease;
+  }
+  .device-toggle button:hover { color: var(--text); }
+  .device-toggle button.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn {
+    height: 32px;
+    padding: 0 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.12s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn:hover { background: var(--surface-alt); border-color: var(--border-strong); }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn.primary {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+  .btn.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .btn.primary:disabled:hover { background: var(--accent); }
+  .btn.icon {
+    width: 32px;
+    padding: 0;
+    justify-content: center;
+    color: var(--text-muted);
+  }
+  .btn.icon:hover { color: var(--text); }
+  .btn svg { width: 14px; height: 14px; }
+
+  /* ───── Workspace ───── */
+  .workspace {
+    display: flex;
+    height: calc(100vh - 56px);
+    overflow: hidden;
+  }
+
+  /* ───── Empty state ───── */
+  .empty-state {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    padding: 48px 32px;
+  }
+  .drop-zone {
+    width: 100%;
+    max-width: 520px;
+    padding: 64px 40px;
+    background: var(--surface);
+    border: 2px dashed var(--border-strong);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    transition: all 0.16s ease;
+    cursor: pointer;
+  }
+  .drop-zone:hover,
+  .drop-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .drop-zone .icon-frame {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 20px;
+    background: var(--accent-soft);
+    border-radius: var(--radius);
+    display: grid;
+    place-items: center;
+    color: var(--accent);
+  }
+  .drop-zone .icon-frame svg { width: 28px; height: 28px; }
+  .drop-zone h2 {
+    margin: 0 0 6px;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .drop-zone .sub {
+    margin: 0 0 24px;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+  .drop-zone .accent-line {
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--text-subtle);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .drop-zone .accent-line strong {
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .link-btn {
+    color: var(--accent);
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .link-btn:hover { color: var(--accent-hover); }
+
+  .error-banner {
+    margin-top: 20px;
+    padding: 10px 14px;
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-radius: var(--radius-sm);
+    color: var(--danger);
+    font-size: 13px;
+    display: none;
+  }
+  .error-banner.visible { display: block; }
+
+  /* ───── Preview area ───── */
+  .preview-area {
+    flex: 1;
+    background: #F0F0F2;
+    overflow: auto;
+    padding: 24px;
+    display: none;
+  }
+  .preview-area.visible { display: flex; justify-content: center; }
+  .preview-wrap {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    transition: max-width 0.24s ease;
+    width: 100%;
+    height: 100%;
+    min-height: 600px;
+    display: flex;
+  }
+  .preview-wrap[data-device="desktop"] { max-width: 100%; }
+  .preview-wrap[data-device="tablet"] { max-width: 820px; }
+  .preview-wrap[data-device="mobile"] { max-width: 420px; }
+  .preview-wrap iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    flex: 1;
+  }
+
+  /* ───── Side panel ───── */
+  .side-panel {
+    width: 400px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .side-panel.visible { display: flex; }
+
+  .panel-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .panel-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .panel-title h3 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    color: var(--text);
+  }
+  .panel-title .count {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--text-subtle);
+    background: var(--surface-alt);
+    padding: 2px 7px;
+    border-radius: 999px;
+  }
+  .search-row {
+    position: relative;
+    margin-bottom: 8px;
+  }
+  .search-row input {
+    width: 100%;
+    height: 32px;
+    padding: 0 78px 0 32px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    transition: border-color 0.12s ease;
+  }
+  .search-row input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--surface);
+  }
+  /* Suppress native clear button — we render our own. */
+  .search-row input[type="search"]::-webkit-search-cancel-button,
+  .search-row input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
+  .search-row .search-icon {
+    position: absolute;
+    left: 9px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    color: var(--text-subtle);
+    pointer-events: none;
+  }
+  .search-row .match-count {
+    position: absolute;
+    right: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-subtle);
+    pointer-events: none;
+  }
+  .search-row .search-clear {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    color: var(--text-subtle);
+    transition: all 0.12s ease;
+  }
+  .search-row .search-clear:hover { background: var(--border); color: var(--text); }
+  .search-row .search-clear.visible { display: inline-flex; }
+  .search-row .search-clear svg { width: 12px; height: 12px; }
+  .replace-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 6px;
+  }
+  .replace-row input {
+    height: 30px;
+    padding: 0 10px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+  }
+  .replace-row input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--surface);
+  }
+  .replace-row button {
+    height: 30px;
+    padding: 0 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 12.5px;
+    color: var(--text-muted);
+    transition: all 0.12s ease;
+  }
+  .replace-row button:hover { background: var(--surface-alt); color: var(--text); }
+
+  .block-list {
+    flex: 1;
+    overflow: auto;
+    padding: 4px 8px 24px;
+  }
+  .block-list:empty::after {
+    content: "No editable text detected.";
+    display: block;
+    padding: 32px;
+    text-align: center;
+    color: var(--text-subtle);
+    font-size: 13px;
+  }
+
+  /* Section headers — group rows by category */
+  .panel-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 10px 6px;
+    margin-top: 8px;
+    border-top: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    z-index: 1;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.12s ease;
+  }
+  .panel-section:hover { background: var(--surface-alt); }
+  .panel-section:first-child {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 6px;
+  }
+  .panel-section.hidden-by-search { display: none; }
+  .panel-section-title {
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-subtle);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-section:hover .panel-section-title { color: var(--text-muted); }
+  .panel-section-chevron {
+    width: 12px;
+    height: 12px;
+    color: var(--text-subtle);
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+  }
+  .panel-section.collapsed .panel-section-chevron {
+    transform: rotate(-90deg);
+  }
+  .panel-section-icon {
+    width: 12px;
+    height: 12px;
+    color: var(--text-subtle);
+  }
+  .panel-section-count {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--text-subtle);
+    background: var(--surface-alt);
+    padding: 1px 7px;
+    border-radius: 999px;
+  }
+  .block-item.hidden-by-collapse { display: none; }
+
+  /* Brief pulse when navigated to from the preview iframe */
+  @keyframes editifact-focus-pulse {
+    0%   { box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.50); }
+    60%  { box-shadow: 0 0 0 6px rgba(79, 70, 229, 0.18); }
+    100% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
+  }
+  .block-item.focus-pulse { animation: editifact-focus-pulse 0.9s ease-out; }
+  .block-item {
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 4px;
+    transition: background 0.12s ease;
+    cursor: pointer;
+    scroll-margin: 8px;
+  }
+  .block-item:hover { background: var(--surface-alt); }
+  .block-item.active {
+    background: var(--accent-soft);
+    box-shadow: inset 0 0 0 1px rgba(79, 70, 229, 0.2);
+  }
+  .block-item.hidden-by-search { display: none; }
+  .block-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .block-tag {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .block-tag.tag-h1, .block-tag.tag-h2, .block-tag.tag-h3 { color: #7C3AED; background: #F5F3FF; }
+  .block-tag.tag-button { color: #059669; background: #ECFDF5; }
+  .block-tag.tag-a { color: #0284C7; background: #F0F9FF; }
+  .block-tag.tag-img { color: #C2410C; background: #FFF7ED; }
+  .block-tag.tag-div { color: var(--text-muted); background: #F1F5F9; }
+  .block-meta-spacer { flex: 1; }
+  .color-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .color-control label {
+    position: relative;
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    border: 1px solid var(--border-strong);
+    cursor: pointer;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text);
+    background: var(--surface);
+    transition: border-color 0.12s ease;
+  }
+  .color-control label:hover { border-color: var(--accent); }
+  .color-control label::after {
+    content: "";
+    position: absolute;
+    left: 3px; right: 3px; bottom: 2px;
+    height: 3px;
+    background: var(--color-swatch, transparent);
+    border-radius: 1px;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  .color-control input[type="color"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+  .color-clear {
+    color: var(--text-subtle);
+    width: 18px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1;
+    transition: color 0.12s ease;
+  }
+  .color-clear:hover { color: var(--danger); }
+  .color-clear[hidden] { display: none; }
+
+  /* Image rows */
+  .image-row {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: 10px;
+    align-items: start;
+  }
+  .image-thumb-wrap {
+    width: 72px;
+    height: 72px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    display: grid;
+    place-items: center;
+  }
+  .image-thumb-wrap img {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+  }
+  .image-controls { display: flex; flex-direction: column; gap: 6px; }
+  .image-controls input[type="text"] {
+    width: 100%;
+    height: 28px;
+    padding: 0 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+  }
+  .image-controls input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.08);
+  }
+  .btn-replace {
+    height: 28px;
+    padding: 0 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 12.5px;
+    color: var(--text-muted);
+    align-self: flex-start;
+    transition: all 0.12s ease;
+  }
+  .btn-replace:hover { background: var(--surface-alt); color: var(--text); border-color: var(--border-strong); }
+
+  /* Solid color swatch (background/border/icon pickers) — the whole label is
+     the swatch, no underline. */
+  .color-control label.solid {
+    background: white;
+    background-image: linear-gradient(45deg, transparent 46%, var(--text-subtle) 46%, var(--text-subtle) 54%, transparent 54%);
+  }
+  .color-control label.solid[style*="background"] {
+    background-image: none;
+  }
+  .color-control label.solid::after {
+    display: none;
+  }
+
+  /* Shape rows */
+  .shape-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .style-row {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    align-items: center;
+    gap: 8px;
+  }
+  .style-row-body {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .style-label {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .style-value {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-subtle);
+    min-width: 32px;
+    text-align: right;
+  }
+  .radius-slider {
+    flex: 1;
+    height: 4px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    min-width: 0;
+  }
+
+  /* Icon rows */
+  .icon-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .icon-preview {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+  }
+  .icon-preview svg {
+    width: 32px;
+    height: 32px;
+    max-width: 100%;
+    max-height: 100%;
+  }
+  .icon-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+  }
+
+  /* New tag colors */
+  .block-tag.tag-shape { color: #9333EA; background: #FAF5FF; }
+  .block-tag.tag-icon-svg { color: #DB2777; background: #FDF2F8; }
+
+  .block-url {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--text-subtle);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+  .block-text {
+    width: 100%;
+    min-height: 32px;
+    resize: none;
+    padding: 6px 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    line-height: 1.45;
+    font-family: inherit;
+    transition: border-color 0.12s ease;
+    overflow: hidden;
+  }
+  .block-text:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.08);
+  }
+  .block-item mark {
+    background: #FEF3C7;
+    color: var(--text);
+    padding: 0 1px;
+    border-radius: 2px;
+  }
+
+  /* ───── Toasts ───── */
+  .toast-host {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 1000;
+    pointer-events: none;
+  }
+  .toast {
+    background: var(--text);
+    color: white;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: var(--shadow-md);
+    animation: toast-in 0.18s ease-out;
+    pointer-events: auto;
+  }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--danger); }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ───── Resume prompt ───── */
+  .resume-prompt {
+    position: fixed;
+    top: 76px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 100;
+    font-size: 13px;
+  }
+  .resume-prompt button {
+    color: var(--accent);
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+  .resume-prompt button:hover { background: var(--accent-soft); }
+  .resume-prompt .dismiss { color: var(--text-subtle); }
+
+  /* Hidden util */
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0);
+    white-space: nowrap; border: 0;
+  }
+</style>
+</head>
+<body>
+<header class="toolbar">
+  <div class="brand">
+    <div class="brand-mark">
+      <span class="dot">E</span>
+      <div class="brand-text">
+        <span class="brand-name">Edit-i-fact</span>
+        <span class="brand-tagline">Edit HTML artifacts like PowerPoint — without touching code.</span>
+      </div>
+    </div>
+    <span class="filename" id="filename" aria-live="polite"></span>
+  </div>
+  <div class="device-toggle" id="device-toggle" role="tablist" aria-label="Preview size">
+    <button data-device="desktop" class="active" role="tab" aria-selected="true">Desktop</button>
+    <button data-device="tablet" role="tab" aria-selected="false">Tablet</button>
+    <button data-device="mobile" role="tab" aria-selected="false">Mobile</button>
+  </div>
+  <div class="actions">
+    <button id="btn-undo" class="btn icon" title="Undo (⌘Z)" disabled aria-label="Undo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>
+    </button>
+    <button id="btn-redo" class="btn icon" title="Redo (⌘⇧Z)" disabled aria-label="Redo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 15-6.7L21 13"/></svg>
+    </button>
+    <button id="btn-upload" class="btn" title="Open .html (⌘O)">Open</button>
+    <button id="btn-download" class="btn primary" disabled title="Download (⌘S)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download
+    </button>
+  </div>
+</header>
+
+<main class="workspace">
+  <section id="empty-state" class="empty-state">
+    <div class="drop-zone" id="drop-zone">
+      <div class="icon-frame">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+      </div>
+      <h2>Drop your .html file here</h2>
+      <p class="sub">or <button class="link-btn" id="empty-upload" type="button">choose a file</button> from your computer</p>
+      <div class="accent-line">
+        <strong>Edit HTML artifacts like PowerPoint</strong><br/>
+        without touching code.
+      </div>
+      <div class="error-banner" id="error-banner"></div>
+    </div>
+  </section>
+
+  <section id="preview-area" class="preview-area">
+    <div class="preview-wrap" id="preview-wrap" data-device="desktop">
+      <iframe id="preview" sandbox="allow-same-origin allow-scripts" title="Document preview"></iframe>
+    </div>
+  </section>
+
+  <aside id="side-panel" class="side-panel" aria-label="Edit panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <h3>Edit</h3>
+        <span class="count" id="block-count">0</span>
+      </div>
+      <div class="search-row">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="search" id="search-input" placeholder="Search text…" aria-label="Search text" />
+        <span class="match-count" id="match-count"></span>
+        <button type="button" class="search-clear" id="search-clear" aria-label="Clear search" tabindex="-1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="replace-row">
+        <input type="text" id="replace-input" placeholder="Replace with…" aria-label="Replace text" />
+        <button id="replace-one" title="Replace first match">Replace</button>
+        <button id="replace-all" title="Replace all matches">All</button>
+      </div>
+    </div>
+    <div class="block-list" id="block-list" role="list"></div>
+  </aside>
+</main>
+
+<input type="file" id="file-input" accept=".html,.htm,text/html" hidden />
+<div class="toast-host" id="toast-host" aria-live="polite"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ─────────────────────────────────────────────
+  // Editable element detection rules
+  // ─────────────────────────────────────────────
+  const Detector = (() => {
+    // Block-level + structural tags that hold text. DIV is included because
+    // modern AI-generated artifacts use <div> as the primary text container.
+    const TEXT_ALLOWLIST = new Set([
+      'DIV',
+      'H1','H2','H3','H4','H5','H6',
+      'P','A','BUTTON','LI',
+      'FIGCAPTION','BLOCKQUOTE','LABEL','SUMMARY',
+      'DT','DD','CAPTION','TH','TD','TIME',
+      // Inline formatting tags — qualify only when standalone (see INLINE_PARENT_SKIP).
+      'SPAN','B','STRONG','EM','I','U','MARK','CODE','SMALL','SUB','SUP','ABBR'
+    ]);
+    // Inline tags skipped when their parent is already an allowlist tag —
+    // parent owns the row, prevents double-tagging "Hello <b>world</b>".
+    const INLINE_PARENT_SKIP = new Set([
+      'SPAN','B','STRONG','EM','I','U','MARK','CODE','SMALL','SUB','SUP','ABBR'
+    ]);
+    const FORBIDDEN_ANCESTORS = new Set([
+      'SCRIPT','STYLE','HEAD','NOSCRIPT','TEMPLATE','SVG'
+    ]);
+
+    function hasForbiddenAncestor(el) {
+      let p = el.parentElement;
+      while (p) {
+        // SVG (and foreign content) reports tagName lowercase — normalize.
+        if (FORBIDDEN_ANCESTORS.has(p.tagName.toUpperCase())) return true;
+        p = p.parentElement;
+      }
+      return false;
+    }
+
+    function hasDirectText(el) {
+      for (const node of el.childNodes) {
+        if (node.nodeType === 3 && node.textContent.trim().length > 0) return true;
+      }
+      return false;
+    }
+
+    function isIconOnly(text) {
+      // Skip only the most obvious chrome glyphs (close/add/check/dismiss icons
+      // that AI artifacts use as button labels). Real placeholders like "—"
+      // and "?" stay editable.
+      const t = text.trim();
+      if (t.length !== 1) return false;
+      return /[×✕✖✗✘＋+×✓✕✖✗✘]/.test(t);
+    }
+
+    // Container tags eligible to become "shape" rows (after iframe-load
+    // computed-style filtering reveals visible bg/border).
+    const SHAPE_CANDIDATE_TAGS = new Set([
+      'DIV','SECTION','ARTICLE','ASIDE','HEADER','FOOTER','NAV','MAIN',
+      'FIGURE','UL','OL','TABLE','TR','TD','TH','THEAD','TBODY','TFOOT',
+      'FIELDSET','BLOCKQUOTE','BUTTON'
+    ]);
+
+    // Returns { type: 'text' | 'image' | 'icon' | 'shape-candidate' } if the
+    // element is worth tracking, otherwise null.
+    function classify(el) {
+      if (!el || el.nodeType !== 1) return null;
+      if (el.hasAttribute('hidden')) return null;
+
+      // SVG icons: must be inline <svg> (not nested in another <svg>), and not
+      // forbidden. We allow elements inside SVG only at the root level.
+      if (el.tagName && el.tagName.toLowerCase() === 'svg') {
+        if (hasForbiddenAncestorExcludingSvg(el)) return null;
+        // Skip nested SVGs (we only tag the outermost).
+        let p = el.parentElement;
+        while (p) {
+          if (p.tagName && p.tagName.toLowerCase() === 'svg') return null;
+          p = p.parentElement;
+        }
+        return { type: 'icon' };
+      }
+
+      if (hasForbiddenAncestor(el)) return null;
+
+      if (el.tagName === 'IMG') {
+        const src = el.getAttribute('src') || '';
+        if (!src) return null;
+        return { type: 'image' };
+      }
+
+      if (TEXT_ALLOWLIST.has(el.tagName) && hasDirectText(el)) {
+        const text = el.textContent.trim();
+        if (text && !isIconOnly(text)) {
+          // Inline tag inside allowlist parent: skip — parent owns the row.
+          if (INLINE_PARENT_SKIP.has(el.tagName)) {
+            const parent = el.parentElement;
+            if (parent && TEXT_ALLOWLIST.has(parent.tagName)) return null;
+          }
+          return { type: 'text' };
+        }
+      }
+
+      // Shape candidate — final confirmation happens after iframe load using
+      // computed styles. We tag now so the same id exists in both source and
+      // iframe DOMs.
+      if (SHAPE_CANDIDATE_TAGS.has(el.tagName)) {
+        return { type: 'shape-candidate' };
+      }
+
+      return null;
+    }
+
+    function hasForbiddenAncestorExcludingSvg(el) {
+      let p = el.parentElement;
+      while (p) {
+        const t = p.tagName.toUpperCase();
+        if (t !== 'SVG' && FORBIDDEN_ANCESTORS.has(t)) return true;
+        p = p.parentElement;
+      }
+      return false;
+    }
+
+    return { classify };
+  })();
+
+  // ─────────────────────────────────────────────
+  // Document model — single source of truth
+  //
+  // Items can be type:'text' | 'image' | 'shape' | 'icon'. Mutations fire one
+  // onChange event with { kind, id, before, after, origin } — kind is the
+  // property that changed: 'text' | 'color' | 'bgColor' | 'borderColor' |
+  // 'borderRadius' | 'iconColor' | 'imageSrc' | 'imageAlt'.
+  //
+  // Shapes are detected in two phases: parse-time tags candidates, then after
+  // the iframe loads we check computed styles to confirm which candidates
+  // actually have a visible bg/border.
+  // ─────────────────────────────────────────────
+  const DocModel = (() => {
+    let doc = null;
+    let items = [];
+    let pendingShapeCandidates = []; // {id, sourceEl} — pending iframe filter
+    let pendingIconCandidates = [];
+    const listeners = new Set();
+    let nextId = 0;
+
+    function load(htmlString) {
+      const parser = new DOMParser();
+      doc = parser.parseFromString(htmlString, 'text/html');
+      items = [];
+      pendingShapeCandidates = [];
+      pendingIconCandidates = [];
+      nextId = 0;
+
+      const walker = doc.createTreeWalker(doc.body || doc, NodeFilter.SHOW_ELEMENT);
+      let n = walker.currentNode;
+      while (n) {
+        const cls = Detector.classify(n);
+        if (cls) {
+          const id = 'ef-' + (nextId++);
+          n.setAttribute('data-edit-id', id);
+          if (cls.type === 'text') {
+            items.push({
+              id, type: 'text',
+              tag: n.tagName,
+              text: n.textContent,
+              href: n.tagName === 'A' ? n.getAttribute('href') : null,
+              color: n.style ? (n.style.color || '') : '',
+              bgColor: n.style ? (n.style.backgroundColor || '') : ''
+            });
+          } else if (cls.type === 'image') {
+            items.push({
+              id, type: 'image',
+              src: n.getAttribute('src') || '',
+              alt: n.getAttribute('alt') || ''
+            });
+          } else if (cls.type === 'shape-candidate') {
+            pendingShapeCandidates.push({ id, sourceEl: n });
+          } else if (cls.type === 'icon') {
+            pendingIconCandidates.push({ id, sourceEl: n });
+          }
+        }
+        n = walker.nextNode();
+      }
+
+      return { textCount: items.length, candidates: pendingShapeCandidates.length + pendingIconCandidates.length };
+    }
+
+    // Phase 2 — called after the iframe has rendered. Reads computed styles
+    // to promote shape candidates with visible bg/border into shape items,
+    // and inline SVGs into icon items.
+    function completeDetection(iframeDoc) {
+      if (!doc || !iframeDoc) return;
+      const win = iframeDoc.defaultView || window;
+
+      // Shapes
+      for (const cand of pendingShapeCandidates) {
+        const iframeEl = iframeDoc.querySelector('[data-edit-id="' + cand.id + '"]');
+        if (!iframeEl) { dropCandidate(cand, null); continue; }
+        const cs = win.getComputedStyle(iframeEl);
+        const bg = cs.backgroundColor;
+        const borderTopColor = cs.borderTopColor;
+        const borderTopWidth = parseFloat(cs.borderTopWidth) || 0;
+        const radius = parseFloat(cs.borderTopLeftRadius) || 0;
+
+        const hasBg = bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent';
+        const hasBorder = borderTopWidth > 0 && borderTopColor !== 'rgba(0, 0, 0, 0)';
+
+        // Skip the document body and elements with no visible chrome.
+        if (iframeEl === iframeDoc.body || (!hasBg && !hasBorder && radius === 0)) {
+          dropCandidate(cand, iframeEl);
+          continue;
+        }
+
+        // Build a short label like "DIV.kpi" or "SECTION"
+        const tag = cand.sourceEl.tagName;
+        const cls = cand.sourceEl.getAttribute('class') || '';
+        const firstClass = cls.split(/\s+/).filter(Boolean)[0];
+        const label = firstClass ? tag + '.' + firstClass : tag;
+
+        items.push({
+          id: cand.id,
+          type: 'shape',
+          tag, label,
+          bgColor: hasBg ? rgbToHex(bg) : '',
+          borderColor: hasBorder ? rgbToHex(borderTopColor) : '',
+          borderWidth: borderTopWidth,
+          borderRadius: radius
+        });
+      }
+      pendingShapeCandidates = [];
+
+      // Icons
+      for (const cand of pendingIconCandidates) {
+        const iframeEl = iframeDoc.querySelector('[data-edit-id="' + cand.id + '"]');
+        if (!iframeEl) { dropCandidate(cand, null); continue; }
+        const rect = iframeEl.getBoundingClientRect ? iframeEl.getBoundingClientRect() : null;
+        // Skip large SVGs (probably charts or illustrations).
+        if (rect && (rect.width > 96 || rect.height > 96 || rect.width === 0 || rect.height === 0)) {
+          dropCandidate(cand, iframeEl);
+          continue;
+        }
+
+        const cs = win.getComputedStyle(iframeEl);
+        const fill = iframeEl.getAttribute('fill') || cs.fill || cs.color;
+        const label = cand.sourceEl.tagName.toUpperCase();
+        items.push({
+          id: cand.id,
+          type: 'icon',
+          label,
+          color: rgbToHex(fill) || ''
+        });
+      }
+      pendingIconCandidates = [];
+
+      function dropCandidate(cand, iframeEl) {
+        // Remove data-edit-id from both DOMs so the candidate doesn't show
+        // hover outlines or absorb clicks.
+        if (cand.sourceEl) cand.sourceEl.removeAttribute('data-edit-id');
+        if (iframeEl) iframeEl.removeAttribute('data-edit-id');
+      }
+
+      return { count: items.length };
+    }
+
+    function rgbToHex(input) {
+      if (!input) return '';
+      const s = String(input).trim();
+      if (/^#[0-9a-f]{6}$/i.test(s)) return s.toLowerCase();
+      const m = s.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      if (!m) return '';
+      return '#' +
+        (+m[1]).toString(16).padStart(2, '0') +
+        (+m[2]).toString(16).padStart(2, '0') +
+        (+m[3]).toString(16).padStart(2, '0');
+    }
+
+    function getItem(id) {
+      return items.find(b => b.id === id) || null;
+    }
+
+    function list() {
+      return items.slice();
+    }
+
+    function getElement(id) {
+      if (!doc) return null;
+      return doc.querySelector('[data-edit-id="' + id + '"]');
+    }
+
+    function notify(payload) {
+      for (const fn of listeners) {
+        try { fn(payload); } catch (e) { console.error(e); }
+      }
+    }
+
+    function setText(id, text, options) {
+      options = options || {};
+      const item = getItem(id);
+      const el = getElement(id);
+      if (!item || !el || item.type !== 'text') return false;
+      const before = item.text;
+      if (before === text) return false;
+      el.textContent = text;
+      item.text = text;
+      notify({ kind: 'text', id, before, after: text, origin: options.origin || 'model' });
+      return true;
+    }
+
+    function setColor(id, color, options) {
+      options = options || {};
+      const item = getItem(id);
+      const el = getElement(id);
+      if (!item || !el || item.type !== 'text') return false;
+      const before = item.color || '';
+      const after = color || '';
+      if (before === after) return false;
+      if (after) el.style.color = after;
+      else el.style.removeProperty('color');
+      item.color = after;
+      notify({ kind: 'color', id, before, after, origin: options.origin || 'model' });
+      return true;
+    }
+
+    function setImageSrc(id, src, options) {
+      options = options || {};
+      const item = getItem(id);
+      const el = getElement(id);
+      if (!item || !el || item.type !== 'image') return false;
+      const before = item.src;
+      if (before === src) return false;
+      el.setAttribute('src', src);
+      item.src = src;
+      notify({ kind: 'imageSrc', id, before, after: src, origin: options.origin || 'model' });
+      return true;
+    }
+
+    function setImageAlt(id, alt, options) {
+      options = options || {};
+      const item = getItem(id);
+      const el = getElement(id);
+      if (!item || !el || item.type !== 'image') return false;
+      const before = item.alt;
+      if (before === alt) return false;
+      el.setAttribute('alt', alt);
+      item.alt = alt;
+      notify({ kind: 'imageAlt', id, before, after: alt, origin: options.origin || 'model' });
+      return true;
+    }
+
+    function setBgColor(id, color, options) {
+      options = options || {};
+      const item = getItem(id);
+      const el = getElement(id);
+      if (!item || !el) return false;
+      const before = item.bgColor || '';
+      const after = color || '';
+      if (before === after) return false;
+      if (after) el.style.backgroundColor = after;
+      else el.style.removeProperty('background-color');
+      item.bgColor = after;
+      notify({ kind: 'bgColor', id, before, after, origin: options.origin || 'model' });
+      return true;
+    }
+
+    function setBorderColor(id, color, options) {
+      options = options || {};
+      const item = getItem(id);
+      const el = getElement(id);
+      if (!item || !el || item.type !== 'shape') return false;
+      const before = item.borderColor || '';
+      const after = color || '';
+      if (before === after) return false;
+      if (after) {
+        el.style.borderColor = after;
+        // Make sure at least a 1px solid border is rendered if there wasn't one.
+        if (!item.borderWidth || item.borderWidth === 0) {
+          el.style.borderWidth = '1px';
+          el.style.borderStyle = el.style.borderStyle || 'solid';
+          item.borderWidth = 1;
+        }
+      } else {
+        el.style.removeProperty('border-color');
+      }
+      item.borderColor = after;
+      notify({ kind: 'borderColor', id, before, after, origin: options.origin || 'model' });
+      return true;
+    }
+
+    function setBorderRadius(id, radiusPx, options) {
+      options = options || {};
+      const item = getItem(id);
+      const el = getElement(id);
+      if (!item || !el || item.type !== 'shape') return false;
+      const before = item.borderRadius || 0;
+      const after = Math.max(0, Number(radiusPx) || 0);
+      if (before === after) return false;
+      el.style.borderRadius = after + 'px';
+      item.borderRadius = after;
+      notify({ kind: 'borderRadius', id, before, after, origin: options.origin || 'model' });
+      return true;
+    }
+
+    function setIconColor(id, color, options) {
+      options = options || {};
+      const item = getItem(id);
+      const el = getElement(id);
+      if (!item || !el || item.type !== 'icon') return false;
+      const before = item.color || '';
+      const after = color || '';
+      if (before === after) return false;
+      if (after) {
+        // Set both color (for currentColor fills) and fill on the root + descendants.
+        el.style.color = after;
+        el.setAttribute('fill', after);
+        const fillables = el.querySelectorAll('path, circle, polygon, rect, ellipse, line, polyline');
+        for (const c of fillables) {
+          if (c.getAttribute('fill') && c.getAttribute('fill') !== 'none') c.setAttribute('fill', after);
+        }
+      } else {
+        el.style.removeProperty('color');
+        el.removeAttribute('fill');
+      }
+      item.color = after;
+      notify({ kind: 'iconColor', id, before, after, origin: options.origin || 'model' });
+      return true;
+    }
+
+    function onChange(fn) {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    }
+
+    function serialize() {
+      if (!doc) return '';
+      const clone = doc.cloneNode(true);
+      clone.querySelectorAll('[data-edit-id]').forEach(el => el.removeAttribute('data-edit-id'));
+      const dt = doc.doctype ? '<!DOCTYPE ' + doc.doctype.name + '>\n' : '<!DOCTYPE html>\n';
+      return dt + clone.documentElement.outerHTML;
+    }
+
+    function serializeForPreview() {
+      if (!doc) return '';
+      const dt = doc.doctype ? '<!DOCTYPE ' + doc.doctype.name + '>\n' : '<!DOCTYPE html>\n';
+      return dt + doc.documentElement.outerHTML;
+    }
+
+    function reset() {
+      // Note: do NOT clear listeners — App registers once at init.
+      doc = null;
+      items = [];
+      nextId = 0;
+    }
+
+    return {
+      load, completeDetection, getItem, getElement, list,
+      setText, setColor, setBgColor, setBorderColor, setBorderRadius,
+      setIconColor, setImageSrc, setImageAlt,
+      onChange, serialize, serializeForPreview, reset
+    };
+  })();
+
+  // ─────────────────────────────────────────────
+  // History — undo/redo of text deltas
+  // ─────────────────────────────────────────────
+  const History = (() => {
+    const MAX = 100;
+    let stack = [];
+    let index = -1; // points to last applied
+    const listeners = new Set();
+
+    function record(delta) {
+      // Drop redo branch
+      stack = stack.slice(0, index + 1);
+      // Coalesce with previous only if same id AND same kind, within 700ms.
+      const prev = stack[stack.length - 1];
+      const now = Date.now();
+      if (prev && prev.id === delta.id && prev.kind === delta.kind && (now - prev.ts) < 700) {
+        prev.after = delta.after;
+        prev.ts = now;
+      } else {
+        stack.push({ ...delta, ts: now });
+        if (stack.length > MAX) stack.shift();
+      }
+      index = stack.length - 1;
+      notify();
+    }
+
+    function undo() {
+      if (index < 0) return null;
+      const entry = stack[index];
+      index--;
+      notify();
+      return { kind: entry.kind, id: entry.id, value: entry.before };
+    }
+
+    function redo() {
+      if (index >= stack.length - 1) return null;
+      index++;
+      const entry = stack[index];
+      notify();
+      return { kind: entry.kind, id: entry.id, value: entry.after };
+    }
+
+    function canUndo() { return index >= 0; }
+    function canRedo() { return index < stack.length - 1; }
+
+    function onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); }
+    function notify() { for (const fn of listeners) fn(); }
+
+    function reset() { stack = []; index = -1; notify(); }
+
+    return { record, undo, redo, canUndo, canRedo, onChange, reset };
+  })();
+
+  // ─────────────────────────────────────────────
+  // FileIO — read/download files
+  // ─────────────────────────────────────────────
+  const FileIO = (() => {
+    function read(file) {
+      return new Promise((resolve, reject) => {
+        if (!file) return reject(new Error('No file provided.'));
+        const name = (file.name || '').toLowerCase();
+        if (!name.endsWith('.html') && !name.endsWith('.htm')) {
+          return reject(new Error('Please choose a .html or .htm file.'));
+        }
+        const reader = new FileReader();
+        reader.onload = () => resolve({ name: file.name, html: String(reader.result || '') });
+        reader.onerror = () => reject(new Error('Could not read the file.'));
+        reader.readAsText(file);
+      });
+    }
+
+    function download(html, originalName) {
+      const stem = (originalName || 'document.html').replace(/\.html?$/i, '');
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = stem + '-edited.html';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    return { read, download };
+  })();
+
+  // ─────────────────────────────────────────────
+  // PreviewFrame — iframe controller
+  // ─────────────────────────────────────────────
+  const PreviewFrame = (() => {
+    const iframe = document.getElementById('preview');
+    const wrap = document.getElementById('preview-wrap');
+    let bound = false;
+    let editingEl = null;
+    let editingBefore = '';
+
+    const OVERLAY_CSS = `
+      [data-edit-id]:not([contenteditable="true"]):hover {
+        outline: 2px solid #4F46E5 !important;
+        outline-offset: 2px !important;
+        cursor: text !important;
+        border-radius: 2px;
+      }
+      img[data-edit-id]:hover {
+        cursor: pointer !important;
+      }
+      [data-edit-id][contenteditable="true"] {
+        outline: 2px solid #4F46E5 !important;
+        outline-offset: 2px !important;
+        background: rgba(79, 70, 229, 0.04) !important;
+        cursor: text !important;
+        border-radius: 2px;
+      }
+      a[data-edit-id] { pointer-events: auto; }
+    `;
+
+    function render(onReady) {
+      const html = DocModel.serializeForPreview();
+      iframe.srcdoc = html;
+      iframe.onload = () => {
+        bindIframe();
+        if (typeof onReady === 'function') onReady(iframe.contentDocument);
+      };
+    }
+
+    function bindIframe() {
+      const idoc = iframe.contentDocument;
+      if (!idoc) return;
+
+      // Inject overlay style (only in iframe, never in source doc)
+      if (!idoc.getElementById('__editifact_overlay')) {
+        const style = idoc.createElement('style');
+        style.id = '__editifact_overlay';
+        style.textContent = OVERLAY_CSS;
+        (idoc.head || idoc.documentElement).appendChild(style);
+      }
+
+      // Bind once per iframe load
+      idoc.addEventListener('click', onIframeClick, true);
+      idoc.addEventListener('input', onIframeInput, true);
+      idoc.addEventListener('blur', onIframeBlur, true);
+      idoc.addEventListener('keydown', onIframeKeydown, true);
+      bound = true;
+    }
+
+    function onIframeClick(e) {
+      let el = e.target.closest && e.target.closest('[data-edit-id]');
+      if (!el) return;
+      // Walk up to the nearest element that's actually an item in the model —
+      // shape candidates that didn't get promoted are tagged but uneditable.
+      let id = el.getAttribute('data-edit-id');
+      let item = DocModel.getItem(id);
+      while (!item && el.parentElement) {
+        el = el.parentElement.closest('[data-edit-id]');
+        if (!el) break;
+        id = el.getAttribute('data-edit-id');
+        item = DocModel.getItem(id);
+      }
+      if (!item) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Non-text items just focus the side panel row.
+      if (item.type !== 'text') {
+        App.notifyFocus(id, 'iframe');
+        return;
+      }
+      if (el === editingEl) return;
+      enterEditMode(el);
+      App.notifyFocus(id, 'iframe');
+    }
+
+    function onIframeInput(e) {
+      const el = e.target.closest && e.target.closest('[data-edit-id]');
+      if (!el || !el.isContentEditable) return;
+      const id = el.getAttribute('data-edit-id');
+      DocModel.setText(id, el.textContent, { origin: 'iframe' });
+    }
+
+    function onIframeBlur(e) {
+      const el = e.target.closest && e.target.closest('[data-edit-id]');
+      if (!el || el !== editingEl) return;
+      commitEdit(el);
+    }
+
+    function onIframeKeydown(e) {
+      if (!editingEl) return;
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        editingEl.blur();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        // Revert text
+        const id = editingEl.getAttribute('data-edit-id');
+        DocModel.setText(id, editingBefore, { origin: 'iframe' });
+        editingEl.textContent = editingBefore;
+        editingEl.blur();
+      }
+    }
+
+    function enterEditMode(el) {
+      if (editingEl && editingEl !== el) commitEdit(editingEl);
+      editingEl = el;
+      editingBefore = el.textContent;
+      el.setAttribute('contenteditable', 'true');
+      el.focus();
+      // Place caret at end
+      const idoc = iframe.contentDocument;
+      const range = idoc.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      const sel = idoc.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    function commitEdit(el) {
+      if (!el) return;
+      el.removeAttribute('contenteditable');
+      // History is recorded per-keystroke in the model listener (coalesced).
+      if (editingEl === el) editingEl = null;
+    }
+
+    function focusBlock(id) {
+      const idoc = iframe.contentDocument;
+      if (!idoc) return;
+      const el = idoc.querySelector('[data-edit-id="' + id + '"]');
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Brief highlight pulse
+      el.style.transition = 'outline 0.2s ease';
+      el.style.outline = '2px solid #4F46E5';
+      el.style.outlineOffset = '2px';
+      setTimeout(() => {
+        el.style.outline = '';
+        el.style.outlineOffset = '';
+      }, 600);
+    }
+
+    function updateElementText(id, text) {
+      const idoc = iframe.contentDocument;
+      if (!idoc) return;
+      const el = idoc.querySelector('[data-edit-id="' + id + '"]');
+      if (!el) return;
+      if (el === editingEl) return; // Don't clobber caret while typing
+      if (el.textContent !== text) el.textContent = text;
+    }
+
+    function updateElementStyle(id, prop, value) {
+      const idoc = iframe.contentDocument;
+      if (!idoc) return;
+      const el = idoc.querySelector('[data-edit-id="' + id + '"]');
+      if (!el) return;
+      if (value) el.style.setProperty(prop, value);
+      else el.style.removeProperty(prop);
+    }
+
+    function updateElementAttr(id, attr, value) {
+      const idoc = iframe.contentDocument;
+      if (!idoc) return;
+      const el = idoc.querySelector('[data-edit-id="' + id + '"]');
+      if (!el) return;
+      if (el.getAttribute(attr) !== value) el.setAttribute(attr, value);
+    }
+
+    function updateIconColor(id, color) {
+      const idoc = iframe.contentDocument;
+      if (!idoc) return;
+      const el = idoc.querySelector('[data-edit-id="' + id + '"]');
+      if (!el) return;
+      if (color) {
+        el.style.color = color;
+        el.setAttribute('fill', color);
+        const fillables = el.querySelectorAll('path, circle, polygon, rect, ellipse, line, polyline');
+        for (const c of fillables) {
+          if (c.getAttribute('fill') && c.getAttribute('fill') !== 'none') c.setAttribute('fill', color);
+        }
+      } else {
+        el.style.removeProperty('color');
+        el.removeAttribute('fill');
+      }
+    }
+
+    function setDevice(mode) {
+      wrap.setAttribute('data-device', mode);
+    }
+
+    return { render, focusBlock, updateElementText, updateElementStyle, updateElementAttr, updateIconColor, setDevice };
+  })();
+
+  // ─────────────────────────────────────────────
+  // SidePanel — block list + search/replace
+  // ─────────────────────────────────────────────
+  const SidePanel = (() => {
+    const listEl = document.getElementById('block-list');
+    const countEl = document.getElementById('block-count');
+    const searchInput = document.getElementById('search-input');
+    const searchClearBtn = document.getElementById('search-clear');
+    const matchCountEl = document.getElementById('match-count');
+    const replaceInput = document.getElementById('replace-input');
+    const replaceOneBtn = document.getElementById('replace-one');
+    const replaceAllBtn = document.getElementById('replace-all');
+
+    let rowById = new Map();
+    let sectionHeaderByType = {};
+    let activeId = null;
+    let expandedByType = { text: true, image: true };
+
+    const CHEVRON_SVG = '<svg class="panel-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+
+    const SECTION_DEFS = [
+      {
+        type: 'text',
+        title: 'Text blocks',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>'
+      },
+      {
+        type: 'shape',
+        title: 'Shapes & boxes',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/></svg>'
+      },
+      {
+        type: 'icon',
+        title: 'Icons',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>'
+      },
+      {
+        type: 'image',
+        title: 'Images',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>'
+      }
+    ];
+
+    function render() {
+      const items = DocModel.list();
+      listEl.innerHTML = '';
+      rowById = new Map();
+      sectionHeaderByType = {};
+      countEl.textContent = items.length;
+
+      // Partition items into groups, preserving document order within each.
+      const groups = { text: [], shape: [], icon: [], image: [] };
+      for (const item of items) {
+        if (groups[item.type]) groups[item.type].push(item);
+      }
+
+      const frag = document.createDocumentFragment();
+      for (const def of SECTION_DEFS) {
+        const group = groups[def.type];
+        if (!group.length) continue;
+
+        const header = buildSectionHeader(def, group.length);
+        sectionHeaderByType[def.type] = header;
+        frag.appendChild(header);
+
+        for (const item of group) {
+          let entry;
+          if (def.type === 'text') entry = buildTextRow(item);
+          else if (def.type === 'shape') entry = buildShapeRow(item);
+          else if (def.type === 'icon') entry = buildIconRow(item);
+          else entry = buildImageRow(item);
+          rowById.set(item.id, entry);
+          frag.appendChild(entry.row);
+        }
+      }
+      listEl.appendChild(frag);
+      runSearch(searchInput.value || '');
+    }
+
+    function buildSectionHeader(def, count) {
+      const header = document.createElement('div');
+      header.className = 'panel-section';
+      header.dataset.type = def.type;
+      header.setAttribute('role', 'button');
+      header.setAttribute('tabindex', '0');
+      header.setAttribute('aria-expanded', String(!!expandedByType[def.type]));
+      header.setAttribute('aria-label', def.title + ' — click to collapse or expand');
+      header.innerHTML =
+        '<span class="panel-section-title">' +
+          CHEVRON_SVG +
+          '<span class="panel-section-icon">' + def.icon + '</span>' +
+          def.title +
+        '</span>' +
+        '<span class="panel-section-count">' + count + '</span>';
+      header.addEventListener('click', () => toggleSection(def.type));
+      header.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleSection(def.type);
+        }
+      });
+      return header;
+    }
+
+    function toggleSection(type) {
+      expandedByType[type] = !expandedByType[type];
+      runSearch(searchInput.value || '');
+    }
+
+    function buildTextRow(item) {
+      const row = document.createElement('div');
+      row.className = 'block-item';
+      row.setAttribute('role', 'listitem');
+      row.dataset.id = item.id;
+      row.dataset.type = 'text';
+
+      const meta = document.createElement('div');
+      meta.className = 'block-meta';
+      const tag = document.createElement('span');
+      tag.className = 'block-tag tag-' + item.tag.toLowerCase();
+      tag.textContent = item.tag;
+      meta.appendChild(tag);
+      if (item.href) {
+        const url = document.createElement('span');
+        url.className = 'block-url';
+        url.textContent = item.href;
+        url.title = item.href;
+        meta.appendChild(url);
+      }
+      const spacer = document.createElement('span');
+      spacer.className = 'block-meta-spacer';
+      meta.appendChild(spacer);
+
+      // Text color picker
+      const textColor = makeColorPicker({
+        title: 'Text color',
+        labelText: 'A',
+        initial: item.color,
+        onChange: (val) => DocModel.setColor(item.id, val, { origin: 'panel' }),
+        onClear: () => DocModel.setColor(item.id, '', { origin: 'panel' })
+      });
+      meta.appendChild(textColor.control);
+
+      // Background color picker
+      const bgColor = makeColorPicker({
+        title: 'Background color',
+        labelText: '',
+        solid: true,
+        initial: item.bgColor,
+        onChange: (val) => DocModel.setBgColor(item.id, val, { origin: 'panel' }),
+        onClear: () => DocModel.setBgColor(item.id, '', { origin: 'panel' })
+      });
+      meta.appendChild(bgColor.control);
+
+      const textarea = document.createElement('textarea');
+      textarea.className = 'block-text';
+      textarea.value = item.text;
+      textarea.rows = 1;
+      textarea.spellcheck = true;
+      autoSize(textarea);
+
+      textarea.addEventListener('input', () => {
+        autoSize(textarea);
+        DocModel.setText(item.id, textarea.value, { origin: 'panel' });
+      });
+      textarea.addEventListener('focus', () => {
+        setActive(item.id);
+        App.notifyFocus(item.id, 'panel');
+      });
+
+      row.appendChild(meta);
+      row.appendChild(textarea);
+      row.addEventListener('click', (e) => {
+        if (e.target === textarea) return;
+        if (e.target.closest('.color-control')) return;
+        textarea.focus();
+      });
+
+      return { row, textarea, textColor, bgColor };
+    }
+
+    function makeColorPicker(opts) {
+      const control = document.createElement('span');
+      control.className = 'color-control';
+      const label = document.createElement('label');
+      label.title = opts.title || '';
+      if (opts.solid) label.classList.add('solid');
+      if (opts.labelText) label.textContent = opts.labelText;
+      const input = document.createElement('input');
+      input.type = 'color';
+      input.value = normalizeColor(opts.initial) || '#000000';
+      label.appendChild(input);
+      const clear = document.createElement('button');
+      clear.type = 'button';
+      clear.className = 'color-clear';
+      clear.textContent = '×';
+      clear.title = 'Reset';
+      clear.hidden = !opts.initial;
+      applyColorSwatch(label, opts.initial, opts.solid);
+      control.appendChild(label);
+      control.appendChild(clear);
+
+      input.addEventListener('input', () => {
+        if (opts.onChange) opts.onChange(input.value);
+      });
+      clear.addEventListener('click', () => {
+        if (opts.onClear) opts.onClear();
+      });
+
+      return { control, label, input, clear, solid: !!opts.solid };
+    }
+
+    function buildShapeRow(item) {
+      const row = document.createElement('div');
+      row.className = 'block-item';
+      row.dataset.id = item.id;
+      row.dataset.type = 'shape';
+
+      const meta = document.createElement('div');
+      meta.className = 'block-meta';
+      const tag = document.createElement('span');
+      tag.className = 'block-tag tag-shape';
+      tag.textContent = item.label || item.tag;
+      tag.title = item.label || item.tag;
+      meta.appendChild(tag);
+
+      const shapeControls = document.createElement('div');
+      shapeControls.className = 'shape-controls';
+
+      // Fill (background) row
+      const fillRow = makeStyleRow('Fill');
+      const fillPicker = makeColorPicker({
+        title: 'Background color',
+        labelText: '',
+        solid: true,
+        initial: item.bgColor,
+        onChange: (val) => DocModel.setBgColor(item.id, val, { origin: 'panel' }),
+        onClear: () => DocModel.setBgColor(item.id, '', { origin: 'panel' })
+      });
+      fillRow.body.appendChild(fillPicker.control);
+      shapeControls.appendChild(fillRow.row);
+
+      // Border row
+      const borderRow = makeStyleRow('Border');
+      const borderPicker = makeColorPicker({
+        title: 'Border color',
+        labelText: '',
+        solid: true,
+        initial: item.borderColor,
+        onChange: (val) => DocModel.setBorderColor(item.id, val, { origin: 'panel' }),
+        onClear: () => DocModel.setBorderColor(item.id, '', { origin: 'panel' })
+      });
+      borderRow.body.appendChild(borderPicker.control);
+      shapeControls.appendChild(borderRow.row);
+
+      // Radius row
+      const radiusRow = makeStyleRow('Radius');
+      const radiusSlider = document.createElement('input');
+      radiusSlider.type = 'range';
+      radiusSlider.min = '0';
+      radiusSlider.max = '48';
+      radiusSlider.value = String(Math.round(item.borderRadius || 0));
+      radiusSlider.className = 'radius-slider';
+      const radiusValue = document.createElement('span');
+      radiusValue.className = 'style-value';
+      radiusValue.textContent = (Math.round(item.borderRadius || 0)) + 'px';
+      radiusSlider.addEventListener('input', () => {
+        radiusValue.textContent = radiusSlider.value + 'px';
+        DocModel.setBorderRadius(item.id, +radiusSlider.value, { origin: 'panel' });
+      });
+      radiusRow.body.appendChild(radiusSlider);
+      radiusRow.body.appendChild(radiusValue);
+      shapeControls.appendChild(radiusRow.row);
+
+      row.appendChild(meta);
+      row.appendChild(shapeControls);
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('input, button, label')) return;
+        setActive(item.id);
+        App.notifyFocus(item.id, 'panel');
+      });
+
+      return { row, fillPicker, borderPicker, radiusSlider, radiusValue };
+    }
+
+    function buildIconRow(item) {
+      const row = document.createElement('div');
+      row.className = 'block-item';
+      row.dataset.id = item.id;
+      row.dataset.type = 'icon';
+
+      const meta = document.createElement('div');
+      meta.className = 'block-meta';
+      const tag = document.createElement('span');
+      tag.className = 'block-tag tag-icon-svg';
+      tag.textContent = 'SVG';
+      meta.appendChild(tag);
+
+      const iconRow = document.createElement('div');
+      iconRow.className = 'icon-row';
+
+      // Preview
+      const preview = document.createElement('div');
+      preview.className = 'icon-preview';
+      // Clone the source SVG into the preview (already small).
+      const sourceEl = DocModel.getElement(item.id);
+      if (sourceEl) {
+        const clone = sourceEl.cloneNode(true);
+        clone.removeAttribute('data-edit-id');
+        preview.appendChild(clone);
+      }
+      iconRow.appendChild(preview);
+
+      // Color picker
+      const styleBody = document.createElement('div');
+      styleBody.className = 'icon-controls';
+      const label = document.createElement('span');
+      label.className = 'style-label';
+      label.textContent = 'Color';
+      const colorPicker = makeColorPicker({
+        title: 'Icon color',
+        labelText: '',
+        solid: true,
+        initial: item.color,
+        onChange: (val) => DocModel.setIconColor(item.id, val, { origin: 'panel' }),
+        onClear: () => DocModel.setIconColor(item.id, '', { origin: 'panel' })
+      });
+      styleBody.appendChild(label);
+      styleBody.appendChild(colorPicker.control);
+      iconRow.appendChild(styleBody);
+
+      row.appendChild(meta);
+      row.appendChild(iconRow);
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('input, button, label')) return;
+        setActive(item.id);
+        App.notifyFocus(item.id, 'panel');
+      });
+
+      return { row, colorPicker, preview };
+    }
+
+    function makeStyleRow(label) {
+      const row = document.createElement('div');
+      row.className = 'style-row';
+      const lbl = document.createElement('span');
+      lbl.className = 'style-label';
+      lbl.textContent = label;
+      const body = document.createElement('span');
+      body.className = 'style-row-body';
+      row.appendChild(lbl);
+      row.appendChild(body);
+      return { row, body };
+    }
+
+    function buildImageRow(item) {
+      const row = document.createElement('div');
+      row.className = 'block-item';
+      row.setAttribute('role', 'listitem');
+      row.dataset.id = item.id;
+      row.dataset.type = 'image';
+
+      const meta = document.createElement('div');
+      meta.className = 'block-meta';
+      const tag = document.createElement('span');
+      tag.className = 'block-tag tag-img';
+      tag.textContent = 'IMG';
+      meta.appendChild(tag);
+
+      const wrap = document.createElement('div');
+      wrap.className = 'image-row';
+      const thumbWrap = document.createElement('div');
+      thumbWrap.className = 'image-thumb-wrap';
+      const thumb = document.createElement('img');
+      thumb.alt = '';
+      thumb.src = item.src;
+      thumb.addEventListener('error', () => { thumb.style.display = 'none'; });
+      thumbWrap.appendChild(thumb);
+
+      const controls = document.createElement('div');
+      controls.className = 'image-controls';
+      const altInput = document.createElement('input');
+      altInput.type = 'text';
+      altInput.placeholder = 'Alt text…';
+      altInput.value = item.alt || '';
+      altInput.spellcheck = true;
+      const replaceBtn = document.createElement('button');
+      replaceBtn.type = 'button';
+      replaceBtn.className = 'btn-replace';
+      replaceBtn.textContent = 'Replace image…';
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'image/*';
+      fileInput.hidden = true;
+
+      controls.appendChild(altInput);
+      controls.appendChild(replaceBtn);
+      controls.appendChild(fileInput);
+      wrap.appendChild(thumbWrap);
+      wrap.appendChild(controls);
+
+      altInput.addEventListener('input', () => {
+        DocModel.setImageAlt(item.id, altInput.value, { origin: 'panel' });
+      });
+      altInput.addEventListener('focus', () => {
+        setActive(item.id);
+        App.notifyFocus(item.id, 'panel');
+      });
+      replaceBtn.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        try {
+          const dataUrl = await readAsDataUrl(file);
+          DocModel.setImageSrc(item.id, dataUrl, { origin: 'panel' });
+          App.toast('Image replaced', 'success');
+        } catch (err) {
+          App.toast('Could not read image', 'error');
+        }
+        fileInput.value = '';
+      });
+
+      row.appendChild(meta);
+      row.appendChild(wrap);
+      row.addEventListener('click', (e) => {
+        if (e.target === altInput || e.target === replaceBtn) return;
+        setActive(item.id);
+        App.notifyFocus(item.id, 'panel');
+      });
+
+      return { row, altInput, thumb };
+    }
+
+    function readAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(new Error('read failed'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function normalizeColor(input) {
+      if (!input) return '';
+      const s = String(input).trim();
+      if (!s) return '';
+      if (/^#[0-9a-f]{6}$/i.test(s)) return s;
+      // Use a probe element to coerce rgb/named colors to a canonical form,
+      // then convert to hex for the native color input.
+      const probe = document.createElement('span');
+      probe.style.color = s;
+      document.body.appendChild(probe);
+      const computed = getComputedStyle(probe).color;
+      probe.remove();
+      const m = computed.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      if (!m) return '';
+      const r = (+m[1]).toString(16).padStart(2, '0');
+      const g = (+m[2]).toString(16).padStart(2, '0');
+      const b = (+m[3]).toString(16).padStart(2, '0');
+      return '#' + r + g + b;
+    }
+
+    function applyColorSwatch(labelEl, color, solid) {
+      labelEl.style.setProperty('--color-swatch', color || 'transparent');
+      if (solid) {
+        if (color) labelEl.style.setProperty('background', color);
+        else labelEl.style.removeProperty('background');
+      }
+    }
+
+    function autoSize(ta) {
+      ta.style.height = 'auto';
+      ta.style.height = Math.min(ta.scrollHeight + 2, 280) + 'px';
+      ta.style.overflow = ta.scrollHeight > 280 ? 'auto' : 'hidden';
+    }
+
+    function focusBlock(id) {
+      const entry = rowById.get(id);
+      if (!entry) return;
+
+      // Expand the section if collapsed, so the row is visible before we
+      // try to scroll it into view.
+      const item = DocModel.getItem(id);
+      if (item && !expandedByType[item.type]) {
+        expandedByType[item.type] = true;
+        runSearch(searchInput.value || '');
+      }
+
+      entry.row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      setActive(id);
+
+      // Brief pulse to signal "we navigated here" — restart the animation
+      // by removing + forcing reflow + re-adding the class.
+      entry.row.classList.remove('focus-pulse');
+      void entry.row.offsetWidth;
+      entry.row.classList.add('focus-pulse');
+      setTimeout(() => entry.row.classList.remove('focus-pulse'), 900);
+    }
+
+    function setActive(id) {
+      if (activeId === id) return;
+      if (activeId) {
+        const prev = rowById.get(activeId);
+        if (prev) prev.row.classList.remove('active');
+      }
+      activeId = id;
+      const cur = rowById.get(id);
+      if (cur) cur.row.classList.add('active');
+    }
+
+    function updateItemText(id, text) {
+      const entry = rowById.get(id);
+      if (!entry || !entry.textarea) return;
+      if (document.activeElement === entry.textarea) return;
+      if (entry.textarea.value !== text) {
+        entry.textarea.value = text;
+        autoSize(entry.textarea);
+      }
+    }
+
+    function syncPicker(picker, color) {
+      if (!picker) return;
+      const hex = normalizeColor(color) || '#000000';
+      if (picker.input.value !== hex) picker.input.value = hex;
+      applyColorSwatch(picker.label, color, picker.solid);
+      picker.clear.hidden = !color;
+    }
+
+    function updateItemColor(id, color) {
+      const entry = rowById.get(id);
+      if (!entry) return;
+      syncPicker(entry.textColor, color);
+    }
+
+    function updateItemBgColor(id, color) {
+      const entry = rowById.get(id);
+      if (!entry) return;
+      // Text rows and shape rows both have a fill picker.
+      syncPicker(entry.bgColor || entry.fillPicker, color);
+    }
+
+    function updateItemBorderColor(id, color) {
+      const entry = rowById.get(id);
+      if (!entry) return;
+      syncPicker(entry.borderPicker, color);
+    }
+
+    function updateItemBorderRadius(id, radius) {
+      const entry = rowById.get(id);
+      if (!entry || !entry.radiusSlider) return;
+      if (document.activeElement === entry.radiusSlider) return;
+      entry.radiusSlider.value = String(Math.round(radius));
+      entry.radiusValue.textContent = Math.round(radius) + 'px';
+    }
+
+    function updateItemIconColor(id, color) {
+      const entry = rowById.get(id);
+      if (!entry) return;
+      syncPicker(entry.colorPicker, color);
+    }
+
+    function updateItemImageSrc(id, src) {
+      const entry = rowById.get(id);
+      if (!entry || !entry.thumb) return;
+      if (entry.thumb.getAttribute('src') !== src) entry.thumb.setAttribute('src', src);
+    }
+
+    function updateItemImageAlt(id, alt) {
+      const entry = rowById.get(id);
+      if (!entry || !entry.altInput) return;
+      if (document.activeElement === entry.altInput) return;
+      if (entry.altInput.value !== alt) entry.altInput.value = alt;
+    }
+
+    function runSearch(query) {
+      const q = (query || '').trim().toLowerCase();
+      matchCountEl.textContent = '';
+      let matches = 0;
+      const items = DocModel.list();
+      const searchActive = q.length > 0;
+      const matchedByType = { text: 0, image: 0 };
+
+      for (const item of items) {
+        const entry = rowById.get(item.id);
+        if (!entry) continue;
+        // Search filter
+        let passesSearch;
+        if (!searchActive) {
+          passesSearch = true;
+        } else if (item.type !== 'text') {
+          // Image rows can't be searched by text — hide while a query is active.
+          passesSearch = false;
+        } else {
+          passesSearch = item.text.toLowerCase().includes(q);
+          if (passesSearch) matches++;
+        }
+        entry.row.classList.toggle('hidden-by-search', !passesSearch);
+        // Collapse filter — active search forces sections expanded.
+        const expanded = searchActive ? true : expandedByType[item.type];
+        entry.row.classList.toggle('hidden-by-collapse', !expanded);
+        if (passesSearch) matchedByType[item.type]++;
+      }
+
+      // Section header visibility + collapsed appearance
+      for (const def of SECTION_DEFS) {
+        const header = sectionHeaderByType[def.type];
+        if (!header) continue;
+        header.classList.toggle('hidden-by-search', matchedByType[def.type] === 0);
+        const showAsExpanded = searchActive ? true : expandedByType[def.type];
+        header.classList.toggle('collapsed', !showAsExpanded);
+        header.setAttribute('aria-expanded', String(showAsExpanded));
+      }
+
+      if (q) matchCountEl.textContent = matches + (matches === 1 ? ' match' : ' matches');
+    }
+
+    function replaceOne() {
+      const q = searchInput.value;
+      const r = replaceInput.value;
+      if (!q) return;
+      const items = DocModel.list();
+      const lower = q.toLowerCase();
+      for (const item of items) {
+        if (item.type !== 'text') continue;
+        const i = item.text.toLowerCase().indexOf(lower);
+        if (i >= 0) {
+          const next = item.text.slice(0, i) + r + item.text.slice(i + q.length);
+          DocModel.setText(item.id, next, { origin: 'replace' });
+          App.toast('Replaced 1 match', 'success');
+          return;
+        }
+      }
+      App.toast('No matches found', 'error');
+    }
+
+    function replaceAll() {
+      const q = searchInput.value;
+      const r = replaceInput.value;
+      if (!q) return;
+      const items = DocModel.list();
+      const lower = q.toLowerCase();
+      let total = 0;
+      for (const item of items) {
+        if (item.type !== 'text') continue;
+        if (!item.text.toLowerCase().includes(lower)) continue;
+        const re = new RegExp(escapeRegex(q), 'gi');
+        const matches = item.text.match(re);
+        if (!matches) continue;
+        const next = item.text.replace(re, r);
+        DocModel.setText(item.id, next, { origin: 'replace' });
+        total += matches.length;
+      }
+      if (total === 0) App.toast('No matches found', 'error');
+      else App.toast('Replaced ' + total + (total === 1 ? ' match' : ' matches'), 'success');
+    }
+
+    function escapeRegex(s) {
+      return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function reset() {
+      listEl.innerHTML = '';
+      rowById = new Map();
+      activeId = null;
+      countEl.textContent = '0';
+      searchInput.value = '';
+      replaceInput.value = '';
+      matchCountEl.textContent = '';
+      syncClearButton();
+    }
+
+    function syncClearButton() {
+      searchClearBtn.classList.toggle('visible', searchInput.value.length > 0);
+    }
+
+    // Wire search/replace
+    searchInput.addEventListener('input', () => {
+      syncClearButton();
+      runSearch(searchInput.value);
+    });
+    searchClearBtn.addEventListener('mousedown', (e) => {
+      // mousedown (not click) so we run before any focus shift, and the
+      // input keeps focus after clearing.
+      e.preventDefault();
+      searchInput.value = '';
+      syncClearButton();
+      runSearch('');
+      searchInput.focus();
+    });
+    replaceOneBtn.addEventListener('click', replaceOne);
+    replaceAllBtn.addEventListener('click', replaceAll);
+
+    return {
+      render, focusBlock, runSearch, reset,
+      updateItemText, updateItemColor,
+      updateItemBgColor, updateItemBorderColor, updateItemBorderRadius,
+      updateItemIconColor,
+      updateItemImageSrc, updateItemImageAlt
+    };
+  })();
+
+  // ─────────────────────────────────────────────
+  // App — glue
+  // ─────────────────────────────────────────────
+  const App = (() => {
+    const els = {
+      emptyState: document.getElementById('empty-state'),
+      previewArea: document.getElementById('preview-area'),
+      sidePanel: document.getElementById('side-panel'),
+      dropZone: document.getElementById('drop-zone'),
+      fileInput: document.getElementById('file-input'),
+      btnUpload: document.getElementById('btn-upload'),
+      btnEmptyUpload: document.getElementById('empty-upload'),
+      btnDownload: document.getElementById('btn-download'),
+      btnUndo: document.getElementById('btn-undo'),
+      btnRedo: document.getElementById('btn-redo'),
+      deviceToggle: document.getElementById('device-toggle'),
+      errorBanner: document.getElementById('error-banner'),
+      filename: document.getElementById('filename'),
+      toastHost: document.getElementById('toast-host'),
+      searchInput: document.getElementById('search-input')
+    };
+
+    const state = {
+      filename: null,
+      dirty: false,
+      hasDoc: false
+    };
+
+    const AUTOSAVE_KEY = 'edit-i-fact:draft';
+    const AUTOSAVE_DELAY = 1200;
+    let autosaveTimer = null;
+
+    function init() {
+      bindFileInput();
+      bindDropZone();
+      bindToolbar();
+      bindShortcuts();
+      bindDeviceToggle();
+      bindModelSync();
+      offerRestore();
+    }
+
+    function bindFileInput() {
+      els.fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) await loadFile(file);
+        e.target.value = '';
+      });
+      const open = () => els.fileInput.click();
+      els.btnUpload.addEventListener('click', open);
+      els.btnEmptyUpload.addEventListener('click', (e) => { e.stopPropagation(); open(); });
+      els.dropZone.addEventListener('click', open);
+    }
+
+    function bindDropZone() {
+      const dz = els.dropZone;
+      ['dragenter','dragover'].forEach(ev => {
+        dz.addEventListener(ev, (e) => {
+          e.preventDefault();
+          dz.classList.add('drag-over');
+        });
+      });
+      ['dragleave','drop'].forEach(ev => {
+        dz.addEventListener(ev, (e) => {
+          e.preventDefault();
+          if (ev === 'dragleave' && e.target !== dz) return;
+          dz.classList.remove('drag-over');
+        });
+      });
+      dz.addEventListener('drop', async (e) => {
+        const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file) await loadFile(file);
+      });
+      window.addEventListener('dragover', (e) => e.preventDefault());
+      window.addEventListener('drop', (e) => e.preventDefault());
+    }
+
+    function bindToolbar() {
+      els.btnDownload.addEventListener('click', download);
+      els.btnUndo.addEventListener('click', doUndo);
+      els.btnRedo.addEventListener('click', doRedo);
+
+      History.onChange(() => {
+        els.btnUndo.disabled = !History.canUndo();
+        els.btnRedo.disabled = !History.canRedo();
+      });
+    }
+
+    function bindShortcuts() {
+      document.addEventListener('keydown', (e) => {
+        const mod = e.metaKey || e.ctrlKey;
+        if (!mod) return;
+        const k = e.key.toLowerCase();
+        if (k === 's') { e.preventDefault(); if (state.hasDoc) download(); }
+        else if (k === 'o') { e.preventDefault(); els.fileInput.click(); }
+        else if (k === 'z' && !e.shiftKey) { e.preventDefault(); doUndo(); }
+        else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); doRedo(); }
+        else if (k === 'f') { e.preventDefault(); els.searchInput.focus(); els.searchInput.select(); }
+      });
+
+      window.addEventListener('beforeunload', (e) => {
+        if (state.dirty) {
+          e.preventDefault();
+          e.returnValue = '';
+        }
+      });
+    }
+
+    function bindDeviceToggle() {
+      els.deviceToggle.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-device]');
+        if (!btn) return;
+        const mode = btn.dataset.device;
+        for (const b of els.deviceToggle.querySelectorAll('button')) {
+          const active = b === btn;
+          b.classList.toggle('active', active);
+          b.setAttribute('aria-selected', active ? 'true' : 'false');
+        }
+        PreviewFrame.setDevice(mode);
+      });
+    }
+
+    function bindModelSync() {
+      DocModel.onChange(({ kind, id, before, after, origin }) => {
+        state.dirty = true;
+        els.filename.classList.add('dirty');
+
+        // Mirror change to whichever surface didn't originate the edit.
+        if (kind === 'text') {
+          if (origin !== 'iframe') PreviewFrame.updateElementText(id, after);
+          if (origin !== 'panel') SidePanel.updateItemText(id, after);
+        } else if (kind === 'color') {
+          PreviewFrame.updateElementStyle(id, 'color', after);
+          if (origin !== 'panel') SidePanel.updateItemColor(id, after);
+        } else if (kind === 'bgColor') {
+          PreviewFrame.updateElementStyle(id, 'background-color', after);
+          if (origin !== 'panel') SidePanel.updateItemBgColor(id, after);
+        } else if (kind === 'borderColor') {
+          PreviewFrame.updateElementStyle(id, 'border-color', after);
+          if (origin !== 'panel') SidePanel.updateItemBorderColor(id, after);
+        } else if (kind === 'borderRadius') {
+          // Always emit the px value, including 0 — falsy check would remove
+          // the inline style and the element's CSS class radius would reappear.
+          PreviewFrame.updateElementStyle(id, 'border-radius', after + 'px');
+          if (origin !== 'panel') SidePanel.updateItemBorderRadius(id, after);
+        } else if (kind === 'iconColor') {
+          PreviewFrame.updateIconColor(id, after);
+          if (origin !== 'panel') SidePanel.updateItemIconColor(id, after);
+        } else if (kind === 'imageSrc') {
+          PreviewFrame.updateElementAttr(id, 'src', after);
+          if (origin !== 'panel') SidePanel.updateItemImageSrc(id, after);
+        } else if (kind === 'imageAlt') {
+          PreviewFrame.updateElementAttr(id, 'alt', after);
+          if (origin !== 'panel') SidePanel.updateItemImageAlt(id, after);
+        }
+
+        // Record history for user-initiated edits, not for replays.
+        if (origin === 'panel' || origin === 'iframe' || origin === 'replace') {
+          History.record({ kind, id, before, after });
+        }
+        scheduleAutosave();
+      });
+    }
+
+    async function loadFile(file) {
+      els.errorBanner.classList.remove('visible');
+      try {
+        const { name, html } = await FileIO.read(file);
+        applyHtml(html, name);
+        toast('Loaded ' + name, 'success');
+      } catch (err) {
+        showError(err.message || 'Failed to load file.');
+      }
+    }
+
+    function applyHtml(html, filename) {
+      DocModel.reset();
+      History.reset();
+      const result = DocModel.load(html);
+      const hasAnything = result && ((result.textCount || 0) > 0 || (result.candidates || 0) > 0);
+      if (!hasAnything) {
+        const noBody = !DocModel.serialize().includes('<body');
+        if (noBody) {
+          showError("We couldn't find any content in this file.");
+          return;
+        }
+      }
+      state.filename = filename;
+      state.dirty = false;
+      state.hasDoc = true;
+      els.filename.textContent = filename;
+      els.filename.classList.add('visible');
+      els.filename.classList.remove('dirty');
+      els.emptyState.style.display = 'none';
+      els.previewArea.classList.add('visible');
+      els.sidePanel.classList.add('visible');
+      els.btnDownload.disabled = false;
+      // Render once after iframe loads, so phase-2 shape/icon detection
+      // has populated items before the panel is built (avoids a re-render
+      // race if the user starts typing fast).
+      PreviewFrame.render((iframeDoc) => {
+        DocModel.completeDetection(iframeDoc);
+        SidePanel.render();
+      });
+      hideResumePrompt();
+    }
+
+    function download() {
+      if (!state.hasDoc) return;
+      const html = DocModel.serialize();
+      FileIO.download(html, state.filename);
+      state.dirty = false;
+      els.filename.classList.remove('dirty');
+      toast('Downloaded', 'success');
+    }
+
+    function applyHistoryOp(op) {
+      if (!op) return;
+      const opts = { origin: 'history' };
+      if (op.kind === 'text') DocModel.setText(op.id, op.value, opts);
+      else if (op.kind === 'color') DocModel.setColor(op.id, op.value, opts);
+      else if (op.kind === 'bgColor') DocModel.setBgColor(op.id, op.value, opts);
+      else if (op.kind === 'borderColor') DocModel.setBorderColor(op.id, op.value, opts);
+      else if (op.kind === 'borderRadius') DocModel.setBorderRadius(op.id, op.value, opts);
+      else if (op.kind === 'iconColor') DocModel.setIconColor(op.id, op.value, opts);
+      else if (op.kind === 'imageSrc') DocModel.setImageSrc(op.id, op.value, opts);
+      else if (op.kind === 'imageAlt') DocModel.setImageAlt(op.id, op.value, opts);
+    }
+    function doUndo() { applyHistoryOp(History.undo()); }
+    function doRedo() { applyHistoryOp(History.redo()); }
+
+    function notifyFocus(id, source) {
+      if (source === 'iframe') SidePanel.focusBlock(id);
+      else if (source === 'panel') PreviewFrame.focusBlock(id);
+    }
+
+    function showError(msg) {
+      els.errorBanner.textContent = msg;
+      els.errorBanner.classList.add('visible');
+    }
+
+    function toast(msg, kind) {
+      const t = document.createElement('div');
+      t.className = 'toast' + (kind ? ' ' + kind : '');
+      t.textContent = msg;
+      els.toastHost.appendChild(t);
+      setTimeout(() => {
+        t.style.transition = 'opacity 0.2s ease';
+        t.style.opacity = '0';
+        setTimeout(() => t.remove(), 220);
+      }, 1800);
+    }
+
+    function scheduleAutosave() {
+      clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(() => {
+        try {
+          const payload = {
+            filename: state.filename,
+            html: DocModel.serialize(),
+            timestamp: Date.now()
+          };
+          localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(payload));
+        } catch (e) { /* quota or storage disabled — ignore silently */ }
+      }, AUTOSAVE_DELAY);
+    }
+
+    function offerRestore() {
+      let raw = null;
+      try { raw = localStorage.getItem(AUTOSAVE_KEY); } catch (e) { return; }
+      if (!raw) return;
+      let data;
+      try { data = JSON.parse(raw); } catch (e) { return; }
+      if (!data || !data.html) return;
+
+      const age = Date.now() - (data.timestamp || 0);
+      if (age > 30 * 24 * 60 * 60 * 1000) { // 30 days
+        try { localStorage.removeItem(AUTOSAVE_KEY); } catch (e) {}
+        return;
+      }
+
+      const prompt = document.createElement('div');
+      prompt.className = 'resume-prompt';
+      prompt.id = 'resume-prompt';
+      prompt.innerHTML =
+        '<span>Restore last session — <strong></strong>?</span>' +
+        '<button id="resume-yes">Restore</button>' +
+        '<button id="resume-no" class="dismiss">Dismiss</button>';
+      prompt.querySelector('strong').textContent = data.filename || 'previous draft';
+      document.body.appendChild(prompt);
+
+      prompt.querySelector('#resume-yes').addEventListener('click', () => {
+        applyHtml(data.html, data.filename || 'restored.html');
+        toast('Session restored', 'success');
+      });
+      prompt.querySelector('#resume-no').addEventListener('click', () => {
+        try { localStorage.removeItem(AUTOSAVE_KEY); } catch (e) {}
+        hideResumePrompt();
+      });
+    }
+
+    function hideResumePrompt() {
+      const p = document.getElementById('resume-prompt');
+      if (p) p.remove();
+    }
+
+    return { init, notifyFocus, toast };
+  })();
+
+  App.init();
+})();
+</script>
+</body>
+</html>
