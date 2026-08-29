@@ -1152,7 +1152,8 @@
   //
   // Shapes are detected in two phases: parse-time tags candidates, then after
   // the iframe loads we check computed styles to confirm which candidates
-  // actually have a visible bg/border.
+  // actually have a visible bg/border/shadow/gradient. Computed values are
+  // captured after the iframe loads, so class-based formatting is editable too.
   // ─────────────────────────────────────────────
   const DocModel = (() => {
     let doc = null;
@@ -1222,6 +1223,20 @@
         const cs = win.getComputedStyle(iframeEl);
         const size = parseFloat(cs.fontSize) || 0;
         if (size) item.fontSize = size;
+        item.color = rgbToHex(cs.color) || item.color || '';
+        item.bgColor = (cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)' && cs.backgroundColor !== 'transparent')
+          ? rgbToHex(cs.backgroundColor) : (item.bgColor || '');
+        item.fontWeight = cs.fontWeight || '400';
+        item.textAlign = cs.textAlign || 'left';
+        item.lineHeight = cs.lineHeight === 'normal' ? '' : (parseFloat(cs.lineHeight) || '');
+        item.letterSpacing = cs.letterSpacing === 'normal' ? '' : (parseFloat(cs.letterSpacing) || '');
+        item.opacity = Number.isFinite(parseFloat(cs.opacity)) ? parseFloat(cs.opacity) : 1;
+        item.borderColor = parseFloat(cs.borderTopWidth) ? (rgbToHex(cs.borderTopColor) || '') : '';
+        item.borderWidth = parseFloat(cs.borderTopWidth) || 0;
+        item.borderStyle = cs.borderTopStyle || 'solid';
+        item.borderRadius = parseFloat(cs.borderTopLeftRadius) || 0;
+        item.padding = parseFloat(cs.paddingTop) || 0;
+        item.boxShadow = cs.boxShadow && cs.boxShadow !== 'none' ? cs.boxShadow : '';
       }
 
       // Shapes
@@ -1230,15 +1245,20 @@
         if (!iframeEl) { dropCandidate(cand, null); continue; }
         const cs = win.getComputedStyle(iframeEl);
         const bg = cs.backgroundColor;
+        const bgImage = cs.backgroundImage;
         const borderTopColor = cs.borderTopColor;
         const borderTopWidth = parseFloat(cs.borderTopWidth) || 0;
+        const borderStyle = cs.borderTopStyle || 'solid';
         const radius = parseFloat(cs.borderTopLeftRadius) || 0;
+        const shadow = cs.boxShadow && cs.boxShadow !== 'none' ? cs.boxShadow : '';
+        const opacity = Number.isFinite(parseFloat(cs.opacity)) ? parseFloat(cs.opacity) : 1;
 
         const hasBg = bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent';
+        const hasBgImage = bgImage && bgImage !== 'none';
         const hasBorder = borderTopWidth > 0 && borderTopColor !== 'rgba(0, 0, 0, 0)';
 
-        // Skip the document body and elements with no visible chrome.
-        if (iframeEl === iframeDoc.body || (!hasBg && !hasBorder && radius === 0)) {
+        // Skip the document body and containers with no visible chrome.
+        if (iframeEl === iframeDoc.body || (!hasBg && !hasBgImage && !hasBorder && radius === 0 && !shadow)) {
           dropCandidate(cand, iframeEl);
           continue;
         }
@@ -1254,9 +1274,13 @@
           type: 'shape',
           tag, label,
           bgColor: hasBg ? rgbToHex(bg) : '',
+          backgroundImage: hasBgImage ? bgImage : '',
           borderColor: hasBorder ? rgbToHex(borderTopColor) : '',
           borderWidth: borderTopWidth,
-          borderRadius: radius
+          borderStyle,
+          borderRadius: radius,
+          boxShadow: shadow,
+          opacity
         });
       }
       pendingShapeCandidates = [];
@@ -1398,7 +1422,7 @@
       options = options || {};
       const item = getItem(id);
       const el = getElement(id);
-      if (!item || !el || item.type !== 'shape') return false;
+      if (!item || !el || !['shape', 'text'].includes(item.type)) return false;
       const before = item.borderColor || '';
       const after = color || '';
       if (before === after) return false;
@@ -1422,7 +1446,7 @@
       options = options || {};
       const item = getItem(id);
       const el = getElement(id);
-      if (!item || !el || item.type !== 'shape') return false;
+      if (!item || !el || !['shape', 'text'].includes(item.type)) return false;
       const before = item.borderRadius || 0;
       const after = Math.max(0, Number(radiusPx) || 0);
       if (before === after) return false;
@@ -1466,7 +1490,7 @@
       options = options || {};
       const item = getItem(id);
       const el = getElement(id);
-      if (!item || !el || item.type !== 'shape') return false;
+      if (!item || !el || !['shape', 'text'].includes(item.type)) return false;
       const before = item.padding || 0;
       const after = Math.max(0, Number(paddingPx) || 0);
       if (before === after) return false;
@@ -1474,6 +1498,80 @@
       item.padding = after;
       notify({ kind: 'padding', id, before, after, origin: options.origin || 'model' });
       return true;
+    }
+
+    // Applies a single CSS property with an undoable, named model mutation.
+    // Keeping this path central prevents the source document and iframe preview
+    // from drifting apart when users edit class-driven formatting.
+    function setStyleValue(id, kind, property, value, options, allowedTypes) {
+      options = options || {};
+      const item = getItem(id);
+      const el = getElement(id);
+      if (!item || !el || (allowedTypes && !allowedTypes.includes(item.type))) return false;
+      const before = item[kind] == null ? '' : item[kind];
+      const after = value == null ? '' : value;
+      if (String(before) === String(after)) return false;
+      if (after === '') el.style.removeProperty(property);
+      else el.style.setProperty(property, String(after));
+      item[kind] = after;
+      notify({ kind, id, before, after, origin: options.origin || 'model' });
+      return true;
+    }
+
+    function setFontWeight(id, value, options) {
+      return setStyleValue(id, 'fontWeight', 'font-weight', value, options, ['text']);
+    }
+
+    function setTextAlign(id, value, options) {
+      return setStyleValue(id, 'textAlign', 'text-align', value, options, ['text']);
+    }
+
+    function setLineHeight(id, value, options) {
+      const normalized = value === '' ? '' : Math.max(0.8, Number(value) || 1.2);
+      return setStyleValue(id, 'lineHeight', 'line-height', normalized, options, ['text']);
+    }
+
+    function setLetterSpacing(id, value, options) {
+      const normalized = value === '' ? '' : Math.max(-4, Math.min(20, Number(value) || 0));
+      options = options || {};
+      const item = getItem(id);
+      const el = getElement(id);
+      if (!item || !el || item.type !== 'text') return false;
+      const before = item.letterSpacing == null ? '' : item.letterSpacing;
+      if (String(before) === String(normalized)) return false;
+      if (normalized === '') el.style.removeProperty('letter-spacing');
+      else el.style.letterSpacing = normalized + 'px';
+      item.letterSpacing = normalized;
+      notify({ kind: 'letterSpacing', id, before, after: normalized, origin: options.origin || 'model' });
+      return true;
+    }
+
+    function setOpacity(id, value, options) {
+      const normalized = Math.max(0, Math.min(1, Number(value)));
+      return setStyleValue(id, 'opacity', 'opacity', normalized, options, ['text', 'shape', 'image', 'icon']);
+    }
+
+    function setBorderWidth(id, value, options) {
+      const normalized = Math.max(0, Math.min(24, Number(value) || 0));
+      options = options || {};
+      const item = getItem(id);
+      const el = getElement(id);
+      if (!item || !el || !['shape', 'text'].includes(item.type)) return false;
+      const before = Number(item.borderWidth) || 0;
+      if (before === normalized) return false;
+      el.style.borderWidth = normalized + 'px';
+      if (normalized > 0 && !el.style.borderStyle) el.style.borderStyle = item.borderStyle || 'solid';
+      item.borderWidth = normalized;
+      notify({ kind: 'borderWidth', id, before, after: normalized, origin: options.origin || 'model' });
+      return true;
+    }
+
+    function setBorderStyle(id, value, options) {
+      return setStyleValue(id, 'borderStyle', 'border-style', value || 'solid', options, ['shape', 'text']);
+    }
+
+    function setBoxShadow(id, value, options) {
+      return setStyleValue(id, 'boxShadow', 'box-shadow', value || '', options, ['shape', 'text']);
     }
 
     function deleteItem(id, options) {
@@ -1656,6 +1754,8 @@
     return {
       load, completeDetection, getItem, getElement, list, canMove,
       setText, setColor, setBgColor, setBorderColor, setBorderRadius, setPadding,
+      setFontWeight, setTextAlign, setLineHeight, setLetterSpacing, setOpacity,
+      setBorderWidth, setBorderStyle, setBoxShadow,
       setIconColor, setImageSrc, setImageAlt,
       setHref, setFontFamily, setFontSize,
       deleteItem, restoreItem, moveItem,
@@ -2184,6 +2284,67 @@
       sizeRow.body.appendChild(fontSizeValue);
       row.appendChild(sizeRow.row);
 
+      // Essential typography controls are based on computed styles, so they
+      // work even when the source file formats text through CSS classes.
+      const weightRow = makeStyleRow('Weight');
+      const weightSelect = makeSelectControl([
+        ['300', 'Light'], ['400', 'Regular'], ['500', 'Medium'],
+        ['600', 'Semibold'], ['700', 'Bold'], ['800', 'Extra bold'], ['900', 'Black']
+      ], String(item.fontWeight || '400'), (value) => {
+        DocModel.setFontWeight(item.id, value, { origin: 'panel' });
+      });
+      weightRow.body.appendChild(weightSelect);
+      row.appendChild(weightRow.row);
+
+      const alignRow = makeStyleRow('Align');
+      const alignSelect = makeSelectControl([
+        ['left', 'Left'], ['center', 'Centre'], ['right', 'Right'], ['justify', 'Justify']
+      ], item.textAlign || 'left', (value) => {
+        DocModel.setTextAlign(item.id, value, { origin: 'panel' });
+      });
+      alignRow.body.appendChild(alignSelect);
+      row.appendChild(alignRow.row);
+
+      const lineHeightRow = makeStyleRow('Line');
+      const lineHeightSlider = makeRangeControl(0.8, 3, 0.05, item.lineHeight || 1.4, '×', (value) => {
+        DocModel.setLineHeight(item.id, value, { origin: 'panel' });
+      });
+      lineHeightRow.body.appendChild(lineHeightSlider.control);
+      row.appendChild(lineHeightRow.row);
+
+      const trackingRow = makeStyleRow('Spacing');
+      const trackingSlider = makeRangeControl(-2, 12, 0.25, item.letterSpacing || 0, 'px', (value) => {
+        DocModel.setLetterSpacing(item.id, value, { origin: 'panel' });
+      });
+      trackingRow.body.appendChild(trackingSlider.control);
+      row.appendChild(trackingRow.row);
+
+      const opacityRow = makeStyleRow('Opacity');
+      const opacitySlider = makeRangeControl(0, 1, 0.05, item.opacity == null ? 1 : item.opacity, '%', (value) => {
+        DocModel.setOpacity(item.id, value, { origin: 'panel' });
+      }, true);
+      opacityRow.body.appendChild(opacitySlider.control);
+      row.appendChild(opacityRow.row);
+
+      // A text node may also be the visible card, pill, badge or table cell.
+      // Expose its box formatting here rather than forcing users to hunt for
+      // a separate wrapper that may not exist in AI-generated markup.
+      const textBorderRow = makeStyleRow('Border');
+      const textBorderPicker = makeColorPicker({
+        title: 'Border color', labelText: '', solid: true, initial: item.borderColor,
+        onChange: (value) => DocModel.setBorderColor(item.id, value, { origin: 'panel' }),
+        onClear: () => DocModel.setBorderColor(item.id, '', { origin: 'panel' })
+      });
+      textBorderRow.body.appendChild(textBorderPicker.control);
+      row.appendChild(textBorderRow.row);
+
+      const textRadiusRow = makeStyleRow('Corners');
+      const textRadiusSlider = makeRangeControl(0, 48, 1, item.borderRadius || 0, 'px', (value) => {
+        DocModel.setBorderRadius(item.id, value, { origin: 'panel' });
+      });
+      textRadiusRow.body.appendChild(textRadiusSlider.control);
+      row.appendChild(textRadiusRow.row);
+
       // Link href (for <a> elements only)
       let hrefInput = null;
       if (item.tag === 'A') {
@@ -2204,7 +2365,9 @@
         textarea.focus();
       });
 
-      return { row, textarea, textColor, bgColor, fontSelect, fontSizeSlider, fontSizeValue, hrefInput };
+      return { row, textarea, textColor, bgColor, fontSelect, fontSizeSlider, fontSizeValue,
+        weightSelect, alignSelect, lineHeightSlider, trackingSlider, opacitySlider,
+        textBorderPicker, textRadiusSlider, hrefInput };
     }
 
     // Curated font family choices. Empty string = inherit (reset).
@@ -2305,6 +2468,45 @@
       return input;
     }
 
+    function makeSelectControl(options, selected, onChange) {
+      const select = document.createElement('select');
+      select.className = 'font-select style-select';
+      for (const [value, label] of options) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        option.selected = String(value) === String(selected);
+        select.appendChild(option);
+      }
+      select.addEventListener('change', () => onChange(select.value));
+      return select;
+    }
+
+    function makeRangeControl(min, max, step, initial, suffix, onChange, percentValue) {
+      const control = document.createElement('span');
+      control.className = 'style-row-body range-control';
+      const input = document.createElement('input');
+      input.type = 'range';
+      input.min = String(min);
+      input.max = String(max);
+      input.step = String(step);
+      input.value = String(Math.max(Number(min), Math.min(Number(max), Number(initial))));
+      input.className = 'radius-slider';
+      const value = document.createElement('span');
+      value.className = 'style-value';
+      const display = () => percentValue
+        ? Math.round(Number(input.value) * 100) + suffix
+        : Number(input.value).toFixed(step < 1 ? String(step).split('.')[1].length : 0).replace(/\.0+$/, '') + suffix;
+      value.textContent = display();
+      input.addEventListener('input', () => {
+        value.textContent = display();
+        onChange(Number(input.value));
+      });
+      control.appendChild(input);
+      control.appendChild(value);
+      return { control, input, value, suffix, percentValue: !!percentValue };
+    }
+
     function makeColorPicker(opts) {
       const control = document.createElement('span');
       control.className = 'color-control';
@@ -2383,6 +2585,22 @@
       borderRow.body.appendChild(borderPicker.control);
       shapeControls.appendChild(borderRow.row);
 
+      const borderWidthRow = makeStyleRow('Border px');
+      const borderWidthSlider = makeRangeControl(0, 12, 1, item.borderWidth || 0, 'px', (value) => {
+        DocModel.setBorderWidth(item.id, value, { origin: 'panel' });
+      });
+      borderWidthRow.body.appendChild(borderWidthSlider.control);
+      shapeControls.appendChild(borderWidthRow.row);
+
+      const borderStyleRow = makeStyleRow('Border');
+      const borderStyleSelect = makeSelectControl([
+        ['solid', 'Solid'], ['dashed', 'Dashed'], ['dotted', 'Dotted'], ['double', 'Double']
+      ], item.borderStyle || 'solid', (value) => {
+        DocModel.setBorderStyle(item.id, value, { origin: 'panel' });
+      });
+      borderStyleRow.body.appendChild(borderStyleSelect);
+      shapeControls.appendChild(borderStyleRow.row);
+
       // Radius row
       const radiusRow = makeStyleRow('Radius');
       const radiusSlider = document.createElement('input');
@@ -2421,6 +2639,34 @@
       paddingRow.body.appendChild(paddingValue);
       shapeControls.appendChild(paddingRow.row);
 
+      const shadowRow = makeStyleRow('Shadow');
+      const shadowOptions = [
+        ['', 'None'],
+        ['0 1px 3px rgba(15,23,42,.12)', 'Soft'],
+        ['0 8px 18px rgba(15,23,42,.16)', 'Medium'],
+        ['0 18px 36px rgba(15,23,42,.22)', 'Strong']
+      ];
+      const matchingShadow = shadowOptions.some(([value]) => value === item.boxShadow);
+      const shadowSelect = makeSelectControl(shadowOptions, matchingShadow ? item.boxShadow : '', (value) => {
+        DocModel.setBoxShadow(item.id, value, { origin: 'panel' });
+      });
+      if (item.boxShadow && !matchingShadow) {
+        const custom = document.createElement('option');
+        custom.value = item.boxShadow;
+        custom.textContent = 'Original shadow';
+        custom.selected = true;
+        shadowSelect.insertBefore(custom, shadowSelect.firstChild.nextSibling);
+      }
+      shadowRow.body.appendChild(shadowSelect);
+      shapeControls.appendChild(shadowRow.row);
+
+      const opacityRow = makeStyleRow('Opacity');
+      const opacitySlider = makeRangeControl(0, 1, 0.05, item.opacity == null ? 1 : item.opacity, '%', (value) => {
+        DocModel.setOpacity(item.id, value, { origin: 'panel' });
+      }, true);
+      opacityRow.body.appendChild(opacitySlider.control);
+      shapeControls.appendChild(opacityRow.row);
+
       row.appendChild(meta);
       row.appendChild(shapeControls);
       row.addEventListener('click', (e) => {
@@ -2429,7 +2675,8 @@
         App.notifyFocus(item.id, 'panel');
       });
 
-      return { row, fillPicker, borderPicker, radiusSlider, radiusValue, paddingSlider, paddingValue };
+      return { row, fillPicker, borderPicker, borderWidthSlider, borderStyleSelect,
+        radiusSlider, radiusValue, paddingSlider, paddingValue, shadowSelect, opacitySlider };
     }
 
     function buildIconRow(item) {
@@ -2699,15 +2946,19 @@
     function updateItemBorderColor(id, color) {
       const entry = rowById.get(id);
       if (!entry) return;
-      syncPicker(entry.borderPicker, color);
+      syncPicker(entry.borderPicker || entry.textBorderPicker, color);
     }
 
     function updateItemBorderRadius(id, radius) {
       const entry = rowById.get(id);
-      if (!entry || !entry.radiusSlider) return;
-      if (document.activeElement === entry.radiusSlider) return;
-      entry.radiusSlider.value = String(Math.round(radius));
-      entry.radiusValue.textContent = Math.round(radius) + 'px';
+      if (!entry) return;
+      if (entry.radiusSlider) {
+        if (document.activeElement === entry.radiusSlider) return;
+        entry.radiusSlider.value = String(Math.round(radius));
+        entry.radiusValue.textContent = Math.round(radius) + 'px';
+      } else {
+        syncRange(entry.textRadiusSlider, radius);
+      }
     }
 
     function updateItemIconColor(id, color) {
@@ -2756,6 +3007,27 @@
       if (document.activeElement === entry.paddingSlider) return;
       entry.paddingSlider.value = String(Math.round(padding));
       entry.paddingValue.textContent = Math.round(padding) + 'px';
+    }
+
+    function syncRange(control, value) {
+      if (!control || document.activeElement === control.input) return;
+      control.input.value = String(value);
+      control.value.textContent = control.percentValue
+        ? Math.round(Number(value) * 100) + control.suffix
+        : Number(value).toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1') + control.suffix;
+    }
+
+    function updateItemStyle(id, kind, value) {
+      const entry = rowById.get(id);
+      if (!entry) return;
+      if (kind === 'fontWeight' && entry.weightSelect) entry.weightSelect.value = String(value);
+      else if (kind === 'textAlign' && entry.alignSelect) entry.alignSelect.value = value;
+      else if (kind === 'lineHeight') syncRange(entry.lineHeightSlider, value);
+      else if (kind === 'letterSpacing') syncRange(entry.trackingSlider, value);
+      else if (kind === 'opacity') syncRange(entry.opacitySlider, value);
+      else if (kind === 'borderWidth') syncRange(entry.borderWidthSlider, value);
+      else if (kind === 'borderStyle' && entry.borderStyleSelect) entry.borderStyleSelect.value = value;
+      else if (kind === 'boxShadow' && entry.shadowSelect) entry.shadowSelect.value = value;
     }
 
     function updateItemImageSrc(id, src) {
@@ -2895,7 +3167,7 @@
       updateItemBgColor, updateItemBorderColor, updateItemBorderRadius, updateItemPadding,
       updateItemIconColor,
       updateItemImageSrc, updateItemImageAlt,
-      updateItemHref, updateItemFontFamily, updateItemFontSize
+      updateItemHref, updateItemFontFamily, updateItemFontSize, updateItemStyle
     };
   })();
 
@@ -3059,6 +3331,30 @@
         } else if (kind === 'fontSize') {
           PreviewFrame.updateElementStyle(id, 'font-size', after ? (after + 'px') : '');
           if (origin !== 'panel') SidePanel.updateItemFontSize(id, after);
+        } else if (kind === 'fontWeight') {
+          PreviewFrame.updateElementStyle(id, 'font-weight', after);
+          if (origin !== 'panel') SidePanel.updateItemStyle(id, kind, after);
+        } else if (kind === 'textAlign') {
+          PreviewFrame.updateElementStyle(id, 'text-align', after);
+          if (origin !== 'panel') SidePanel.updateItemStyle(id, kind, after);
+        } else if (kind === 'lineHeight') {
+          PreviewFrame.updateElementStyle(id, 'line-height', after);
+          if (origin !== 'panel') SidePanel.updateItemStyle(id, kind, after);
+        } else if (kind === 'letterSpacing') {
+          PreviewFrame.updateElementStyle(id, 'letter-spacing', after === '' ? '' : after + 'px');
+          if (origin !== 'panel') SidePanel.updateItemStyle(id, kind, after);
+        } else if (kind === 'opacity') {
+          PreviewFrame.updateElementStyle(id, 'opacity', after);
+          if (origin !== 'panel') SidePanel.updateItemStyle(id, kind, after);
+        } else if (kind === 'borderWidth') {
+          PreviewFrame.updateElementStyle(id, 'border-width', after + 'px');
+          if (origin !== 'panel') SidePanel.updateItemStyle(id, kind, after);
+        } else if (kind === 'borderStyle') {
+          PreviewFrame.updateElementStyle(id, 'border-style', after);
+          if (origin !== 'panel') SidePanel.updateItemStyle(id, kind, after);
+        } else if (kind === 'boxShadow') {
+          PreviewFrame.updateElementStyle(id, 'box-shadow', after);
+          if (origin !== 'panel') SidePanel.updateItemStyle(id, kind, after);
         } else if (kind === 'delete') {
           PreviewFrame.removeElement(id);
           SidePanel.render();
@@ -3157,6 +3453,14 @@
       else if (op.kind === 'href') DocModel.setHref(op.id, op.value, opts);
       else if (op.kind === 'fontFamily') DocModel.setFontFamily(op.id, op.value, opts);
       else if (op.kind === 'fontSize') DocModel.setFontSize(op.id, op.value, opts);
+      else if (op.kind === 'fontWeight') DocModel.setFontWeight(op.id, op.value, opts);
+      else if (op.kind === 'textAlign') DocModel.setTextAlign(op.id, op.value, opts);
+      else if (op.kind === 'lineHeight') DocModel.setLineHeight(op.id, op.value, opts);
+      else if (op.kind === 'letterSpacing') DocModel.setLetterSpacing(op.id, op.value, opts);
+      else if (op.kind === 'opacity') DocModel.setOpacity(op.id, op.value, opts);
+      else if (op.kind === 'borderWidth') DocModel.setBorderWidth(op.id, op.value, opts);
+      else if (op.kind === 'borderStyle') DocModel.setBorderStyle(op.id, op.value, opts);
+      else if (op.kind === 'boxShadow') DocModel.setBoxShadow(op.id, op.value, opts);
       else if (op.kind === 'delete') {
         if (op.value && op.value.element) DocModel.restoreItem(op.value, opts);
         else DocModel.deleteItem(op.id, opts);
